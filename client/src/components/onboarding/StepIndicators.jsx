@@ -1,3 +1,6 @@
+/**
+ * Displays the step indicator dots at the bottom of the onboarding page.
+ */
 function StepIndicators({ currentStep, totalSteps }) {
   return (
     <div

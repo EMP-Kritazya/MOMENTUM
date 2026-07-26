@@ -1,5 +1,8 @@
 import TextInput from '../ui/TextInput'
 
+/**
+ * Displays the profile form that collects the user's name, username, and email.
+ */
 function ProfileStep({
     values,
     errors,

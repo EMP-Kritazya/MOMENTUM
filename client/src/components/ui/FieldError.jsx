@@ -1,3 +1,6 @@
+/**
+ * Displays an accessible validation message beneath a form field when one exists.
+ */
 function FieldError({ id, children }) {
     if (!children) return null
 

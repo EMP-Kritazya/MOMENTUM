@@ -1,5 +1,8 @@
 import FieldError from './FieldError'
 
+/**
+ * Displays a reusable controlled text input with a label and validation error.
+ */
 function TextInput({
     id,
     label,

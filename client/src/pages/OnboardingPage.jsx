@@ -7,6 +7,7 @@ import { onboardingQuestions } from "../data/onboardingQuestions";
 import ProfileStep from "../components/onboarding/ProfileStep";
 import Button from "../components/ui/Button";
 
+// Stores every profile and fitness answer collected during onboarding.
 const initialAnswers = {
   firstName: "",
   lastName: "",
@@ -19,6 +20,7 @@ const initialAnswers = {
   weeklyCommitment: null,
 };
 
+// Stores field-specific validation messages for the profile form.
 const initialProfileErrors = {
   firstName: "",
   lastName: "",
@@ -27,18 +29,20 @@ const initialProfileErrors = {
 };
 
 function OnboardingPage() {
+  // Controls the active fitness question and all onboarding form data.
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState(initialAnswers);
   const [showProfileStep, setShowProfileStep] = useState(true);
   const [profileErrors, setProfileErrors] = useState(initialProfileErrors);
   
-
+  // Gets the active question, its answer, and whether the user may continue.
   const question = onboardingQuestions[currentStep];
   const currentAnswer = answers[question.id];
   const canContinue = Array.isArray(currentAnswer)
     ? currentAnswer.length > 0
     : currentAnswer !== "" && currentAnswer !== null;
 
+  // Updates a profile field and clears its previous validation error.
   function handleProfileChange(event) {
     const {name, value} = event.target
 
@@ -53,6 +57,7 @@ function OnboardingPage() {
     }))
   }
 
+  // Validates required profile fields and returns an error object.
   function validateProfile(values) {
     const errors = {
       firstName: "",
@@ -83,10 +88,12 @@ function OnboardingPage() {
   return errors
   }
 
+  // Returns true when at least one profile validation message exists.
   function hasErrors(errors) {
     return Object.values(errors).some(Boolean)
   }
 
+  // Saves either a single-choice answer or a multi-select equipment answer.
   function handleSelect(value) {
     if (question.selectionType === "single") {
       setAnswers((current) => ({ ...current, [question.id]: value }));
@@ -96,6 +103,7 @@ function OnboardingPage() {
     setAnswers((current) => {
       const selected = current.equipmentAvailable;
 
+      // "No Equipment" is exclusive and clears every other equipment choice.
       if (value === "none") {
         return {
           ...current,
@@ -106,6 +114,7 @@ function OnboardingPage() {
       const withoutNone = selected.filter((item) => item !== "none");
       const isSelected = withoutNone.includes(value);
 
+      // Toggles the selected equipment without mutating the existing array.
       return {
         ...current,
         equipmentAvailable: isSelected
@@ -115,6 +124,7 @@ function OnboardingPage() {
     });
   }
 
+  // Validates and normalizes profile data before showing fitness question one.
   function handleProfileContinue() {
     const errors = validateProfile(answers)
     setProfileErrors(errors)
@@ -132,25 +142,21 @@ function OnboardingPage() {
     setShowProfileStep(false);
   }
 
+  // Advances questions or prepares the completed frontend payload on step five.
   function handleContinue() {
     if (!canContinue) return;
 
     if (currentStep === onboardingQuestions.length - 1) {
-      // The API submission will replace this when the backend route is ready.
-      console.log("Onboarding answers:", answers);
+      // Replace this console output with the onboarding API request later.
+      const payload = buildUserPayload(answers);
+      console.log("Onboarding payload:", payload);
       return;
     }
 
     setCurrentStep((step) => step + 1);
-
-    // Frontend validate only, remove after hook with server 
-    if (currentStep === onboardingQuestions.length - 1) {
-      const payload = buildUserPayload(answers);
-      console.log("Onboarding payload:", payload);
-      return;
-  }
   }
 
+  // Returns to the profile form from step one or to the previous question.
   function handleBack() {
     if (currentStep === 0) {
       setShowProfileStep(true)
@@ -159,6 +165,7 @@ function OnboardingPage() {
     setCurrentStep(step => step - 1)
   }
 
+  // Converts camelCase React state into snake_case database field names.
   function buildUserPayload(values) {
     return {
       username: values.username.trim(),
@@ -184,6 +191,7 @@ function OnboardingPage() {
 
         <section className="flex flex-1 flex-col px-6 pb-6 pt-20 sm:px-8 sm:pt-28">
           <div className="mx-auto w-full max-w-2xl">
+            {/* Shows profile inputs first, then switches to fitness questions. */}
             {showProfileStep ? (
               <>
                 <ProfileStep
@@ -222,6 +230,7 @@ function OnboardingPage() {
               )}
           </div>
 
+          {/* Hides fitness step dots while the profile form is displayed. */}
           {!showProfileStep && (
             <div className="mt-auto pt-12">
               <StepIndicators

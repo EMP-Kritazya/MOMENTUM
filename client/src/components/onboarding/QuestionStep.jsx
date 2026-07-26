@@ -1,5 +1,8 @@
 import OptionCard from "./OptionCard";
 
+/**
+ * Displays the current onboarding question and its selectable answer cards.
+ */
 function QuestionStep({ question, stepNumber, value, onSelect }) {
   const isMultiple = question.selectionType === "multiple";
   const headingId = `${question.id}-heading`;

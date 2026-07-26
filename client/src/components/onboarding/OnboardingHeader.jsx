@@ -1,3 +1,6 @@
+/**
+ * Displays the Momentum header and the optional onboarding step progress bar.
+ */
 function OnboardingHeader({ currentStep, totalSteps, showProgress = true }) {
   const progress = ((currentStep + 1) / totalSteps) * 100;
 

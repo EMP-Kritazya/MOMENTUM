@@ -1,5 +1,8 @@
 import Button from "../ui/Button";
 
+/**
+ * Displays the Back and Continue buttons used to navigate onboarding steps.
+ */
 function OnboardingNavigation({
   canContinue,
   isFirstStep,

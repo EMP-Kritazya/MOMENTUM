@@ -1,3 +1,6 @@
+/**
+ * Displays a selectable radio or checkbox card for one questionnaire answer.
+ */
 function OptionCard({ option, selected, multiple, onChange, name }) {
   return (
     <label

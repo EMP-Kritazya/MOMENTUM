@@ -1,3 +1,6 @@
+/**
+ * Displays a reusable primary or secondary button with shared interaction styles.
+ */
 const variants = {
     primary:
     "bg-momentum-lime text-[#11130d] hover:bg-[#d2ff52] disabled:bg-[#1c1f2f] disabled:text-momentum-muted",
