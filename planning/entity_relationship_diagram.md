@@ -25,63 +25,66 @@ Our database consists of 4 main entity tables, 1 dynamic tracking table, and 2 j
 #### 1. users
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
-| `user_id` | integer | primary key |
-| `username` | text | unique display name of the user |
-| `email` | text | unique email address used for identification |
-| `fitness_goal` | text | primary objective from onboarding (e.g., 'Build Muscle') |
-| `experience_level` | text | training background from onboarding (e.g., 'Intermediate') |
-| `preferred_location` | text | choice of training facility environment (e.g., 'At the Gym') |
-| `equipment_available`| text | comma-separated list or array of user fitness gear |
+| `user_id` | serial | primary key |
+| `username` | varchar(50) | unique display name of the user |
+| `first_name` | varchar(50) | required first name of the user |
+| `last_name` | varchar(50) | required last name of the user |
+| `email` | varchar(100) | unique email address used for identification |
+| `fitness_goal` | varchar(50) | primary objective from onboarding (e.g., 'Build Muscle') |
+| `experience_level` | varchar(30) | training background from onboarding (e.g., 'Intermediate') |
+| `equipment_available`| varchar(50) | available user fitness equipment |
 | `weekly_commitment` | integer | number of days per week the user commits to train |
 
 #### 2. workout_sessions
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
-| `session_id` | integer | primary key |
-| `user_id` | integer | foreign key pointing to users.user_id |
-| `template_id` | integer | foreign key pointing to workout_templates.template_id |
-| `date` | date | the calendar date the training session took place |
-| `duration_minutes` | integer | total length of the session in minutes (for weekly tracking stats) |
-| `completed` | boolean | flag identifying if the session was successfully checked off |
+| `session_id` | serial | primary key |
+| `user_id` | integer | required foreign key pointing to users.user_id; unique together with template_id |
+| `template_id` | integer | required foreign key pointing to workout_templates.template_id; unique together with user_id |
+| `date` | date | required calendar date the training session took place |
+| `duration_minutes` | integer | required total length of the session in minutes (for weekly tracking stats) |
+| `completed` | boolean | required flag identifying if the session was successfully checked off; defaults to false |
 
 #### 3. workout_templates
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
-| `template_id` | integer | primary key |
-| `title` | text | name of the structured routine (e.g., 'Beginner Upper Body') |
+| `template_id` | serial | primary key |
+| `title` | varchar(100) | required name of the structured routine (e.g., 'Beginner Upper Body') |
 
 #### 4. workout_template_exercises (Junction Table)
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
-| `template_id` | integer | foreign key pointing to workout_templates.template_id |
-| `exercise_id` | integer | foreign key pointing to exercises.exercise_id |
-| `sets` | integer | target number of sets to execute |
-| `reps` | integer | target number of reps per set |
-| `order` | integer | sequence index of the movement in the workout |
+| `template_id` | integer | required foreign key pointing to workout_templates.template_id; part of the composite primary key |
+| `exercise_id` | integer | required foreign key pointing to exercises.exercise_id; part of the composite primary key |
+| `sets` | integer | required target number of sets to execute |
+| `reps` | integer | required target number of reps per set |
+| `exercise_order` | integer | required sequence index of the movement in the workout |
 
 #### 5. accountability_groups
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
-| `group_id` | integer | primary key |
-| `group_name` | text | unique title of the accountability group circle |
+| `group_id` | serial | primary key |
+| `group_name` | varchar(100) | required title of the accountability group circle |
 | `description` | text | short bio explaining the purpose or target of the group |
 | `created_by_user_id`| integer | foreign key pointing to users.user_id (group owner) |
-| `current_streak` | integer | cumulative daily consecutive tracking streak metric for the entire group |
+| `current_streak` | integer | cumulative daily consecutive tracking streak metric for the entire group; defaults to 0 |
 
 #### 6. group_members (Many-to-Many Junction Table)
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
-| `group_id` | integer | foreign key pointing to accountability_groups.group_id |
-| `user_id` | integer | foreign key pointing to users.user_id |
-| `joined_at` | timestamp | timestamp when the user joined the accountability squad |
-| `is_admin` | boolean | flag identifying if the user has administrative privileges |
-| `daily_status` | text | explicit daily checking status identifier ('Done' or 'Pending') |
-| `current_streak` | integer | individual workout consistency streak inside this group |
+| `member_id` | serial | primary key |
+| `group_id` | integer | required foreign key pointing to accountability_groups.group_id; unique together with user_id |
+| `user_id` | integer | required foreign key pointing to users.user_id; unique together with group_id |
+| `joined_at` | timestamp | timestamp when the user joined the accountability squad; defaults to the current timestamp |
+| `is_admin` | boolean | flag identifying if the user has administrative privileges; defaults to false |
+| `daily_status` | varchar(20) | explicit daily checking status identifier ('Done' or 'Pending') |
+| `current_streak` | integer | individual workout consistency streak inside this group; defaults to 0 |
 
 #### 7. exercises (Standalone Table)
 | Column Name | Type | Description |
 | :--- | :--- | :--- |
-| `exercise_id` | integer | primary key |
-| `exercise_name` | text | name of the physical exercise (e.g., 'Squat') |
-| `target_muscle` | text | core anatomical muscle targeted by the movement |
-| `equipment_needed` | text | primary mechanical equipment required to execute the lift |
+| `exercise_id` | serial | primary key |
+| `exercise_name` | varchar(100) | required name of the physical exercise (e.g., 'Squat') |
+| `target_muscle` | varchar(50) | core anatomical muscle targeted by the movement |
+| `equipment_needed` | varchar(50) | primary mechanical equipment required to execute the lift |
+| `difficulty` | varchar(30) | difficulty level of the exercise |

@@ -1,3 +1,5 @@
+import Button from "../ui/Button";
+
 function OnboardingNavigation({
   canContinue,
   isFirstStep,
@@ -13,17 +15,18 @@ function OnboardingNavigation({
       ].join(" ")}
     >
       {!isFirstStep && (
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={onBack}
-          className="min-h-12 rounded-2xl border border-momentum-border font-semibold text-white transition-colors hover:border-[#454957] hover:bg-momentum-panel focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime"
         >
           Back
-        </button>
+        </Button>
       )}
 
-      <button
+      <Button
         type="button"
+        variant="primary"
         disabled={!canContinue}
         onClick={onContinue}
         className="min-h-12 rounded-2xl bg-momentum-lime px-4 font-bold text-[#11130d] transition-colors hover:bg-[#d2ff52] focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime focus-visible:ring-offset-2 focus-visible:ring-offset-momentum-bg disabled:cursor-not-allowed disabled:bg-[#1c1f2f] disabled:text-momentum-muted"
@@ -32,7 +35,7 @@ function OnboardingNavigation({
         <span aria-hidden="true" className="ml-2">
           →
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
