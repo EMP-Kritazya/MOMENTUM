@@ -48,7 +48,6 @@ Backend:
 
 New users complete a short onboarding questionnaire that collects their fitness goal, experience level, preferred workout location, available equipment, and desired workout frequency. This information is used to automatically generate a personalized starter workout plan.
 
-![Momentum!](./planning/images/Onboading.mp4)
 
 
 
