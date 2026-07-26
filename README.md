@@ -49,7 +49,7 @@ Backend:
 New users complete a short onboarding questionnaire that collects their fitness goal, experience level, preferred workout location, available equipment, and desired workout frequency. This information is used to automatically generate a personalized starter workout plan.
 
 
-
+https://github.com/user-attachments/assets/5eeecaef-6076-4e73-8bdc-24f106df94a4
 
 ---
 
