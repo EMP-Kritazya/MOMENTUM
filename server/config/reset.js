@@ -1,5 +1,8 @@
 import { pool } from "./database.js";
 import "./dotenv.js";
+import exercises from "../data/exercise.js";
+import workoutTemplates from "../data/workoutTemplates.js";
+import workoutTemplateExercises from "../data/workoutTemplateExercises.js";
 
 const dropAllTables = async () => {
   const dropTablesQuery = `
@@ -119,10 +122,78 @@ const createTables = async () => {
   }
 };
 
-// reset
-const resetDatabase = async () => {
-  await dropAllTables();
-  await createTables();
+const seedExerciseTable = async () => {
+  try {
+    for (const exercise of exercises) {
+      const insertQuery = {
+        text: "INSERT INTO exercises (exercise_name, target_muscle, equipment_needed, difficulty) VALUES ($1, $2, $3, $4)",
+      };
+
+      const values = [
+        exercise.exercise_name,
+        exercise.target_muscle,
+        exercise.equipment_needed,
+        exercise.difficulty,
+      ];
+
+      await pool.query(insertQuery, values);
+    }
+    console.log(`✅ Exercises added successfully`);
+  } catch (error) {
+    console.error("⚠️ Error seeding exercises:", error.message);
+    return;
+  }
 };
 
-resetDatabase();
+const seedWorkoutTemplateTable = async () => {
+  try {
+    for (const template of workoutTemplates) {
+      const insertQuery = {
+        text: "INSERT INTO workouttemplates (title) VALUES ($1)",
+      };
+
+      const values = [template.title];
+
+      await pool.query(insertQuery, values);
+    }
+    console.log(`✅ Workout Templates added successfully`);
+  } catch (error) {
+    console.error("⚠️ Error seeding Workout Templates:", error.message);
+    return;
+  }
+};
+
+const seedWorkoutTemplateExercisesTable = async () => {
+  try {
+    for (const workoutTemplateExercise of workoutTemplateExercises) {
+      const insertQuery = {
+        text: "INSERT INTO workouttemplateexercises (template_id, exercise_id, sets, reps, exercise_order) VALUES ($1, $2, $3, $4, $5)",
+      };
+
+      const values = [
+        workoutTemplateExercise.template_id,
+        workoutTemplateExercise.exercise_id,
+        workoutTemplateExercise.sets,
+        workoutTemplateExercise.reps,
+        workoutTemplateExercise.exercise_order,
+      ];
+
+      await pool.query(insertQuery, values);
+    }
+    console.log(`✅ WorkoutTemplateExercises added successfully`);
+  } catch (error) {
+    console.error("⚠️ Error seeding WorkoutTemplateExercises:", error.message);
+    return;
+  }
+};
+
+const seedTables = async () => {
+  await dropAllTables();
+  await createTables();
+
+  await seedExerciseTable();
+  await seedWorkoutTemplateTable();
+  await seedWorkoutTemplateExercisesTable();
+};
+
+seedTables();
