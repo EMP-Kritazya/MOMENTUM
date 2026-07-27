@@ -16,7 +16,7 @@ export default function App() {
       {/* Everything else shares the sidebar layout */}
       <Route element={<AppLayout />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/workouts" element={<History />} />
+        <Route path="/history" element={<History />} />
         <Route path="/library" element={<ExerciseLibrary />} />
         <Route path="/groups" element={<WorkoutGroups />} />
       </Route>
