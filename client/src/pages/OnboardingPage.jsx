@@ -4,6 +4,7 @@ import OnboardingNavigation from "../components/onboarding/OnboardingNavigation"
 import QuestionStep from "../components/onboarding/QuestionStep";
 import StepIndicators from "../components/onboarding/StepIndicators";
 import { onboardingQuestions } from "../data/onboardingQuestions";
+import { useNavigate } from "react-router-dom";
 
 const initialAnswers = {
   fitnessGoal: "",
@@ -14,6 +15,8 @@ const initialAnswers = {
 };
 
 function OnboardingPage() {
+  const nav = useNavigate();
+
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState(initialAnswers);
 
@@ -57,11 +60,14 @@ function OnboardingPage() {
     if (currentStep === onboardingQuestions.length - 1) {
       // The API submission will replace this when the backend route is ready.
       console.log("Onboarding answers:", answers);
+      nav("/");
+      
       return;
     }
 
     setCurrentStep((step) => step + 1);
   }
+
 
   return (
     <main className="min-h-screen bg-momentum-bg">
