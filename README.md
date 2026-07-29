@@ -33,7 +33,7 @@ Momentum is inspired by habit-building products such as Duolingo and GitHub cont
 Frontend:
 - React
 - React Router
-- CSS / Tailwind CSS (TBD)
+- Tailwind CSS
 
 Backend:
 - Node.js
@@ -44,11 +44,13 @@ Backend:
 
 # Features
 
-## Personalized Onboarding
+## ✅ Personalized Onboarding
 
 New users complete a short onboarding questionnaire that collects their fitness goal, experience level, preferred workout location, available equipment, and desired workout frequency. This information is used to automatically generate a personalized starter workout plan.
 
-[gif goes here]
+https://github.com/user-attachments/assets/35ec711a-0d21-4578-8e35-a6a9aca0beed
+
+
 
 ---
 
