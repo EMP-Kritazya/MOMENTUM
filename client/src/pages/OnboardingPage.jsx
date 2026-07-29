@@ -4,6 +4,7 @@ import OnboardingNavigation from "../components/onboarding/OnboardingNavigation"
 import QuestionStep from "../components/onboarding/QuestionStep";
 import StepIndicators from "../components/onboarding/StepIndicators";
 import { onboardingQuestions } from "../data/onboardingQuestions";
+import { useNavigate } from "react-router-dom";
 import ProfileStep from "../components/onboarding/ProfileStep";
 import Button from "../components/ui/Button";
 
@@ -29,6 +30,8 @@ const initialProfileErrors = {
 };
 
 function OnboardingPage() {
+  const nav = useNavigate();
+
   // Controls the active fitness question and all onboarding form data.
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState(initialAnswers);
@@ -150,6 +153,7 @@ function OnboardingPage() {
       // Replace this console output with the onboarding API request later.
       const payload = buildUserPayload(answers);
       console.log("Onboarding payload:", payload);
+      nav("/");
       return;
     }
 
