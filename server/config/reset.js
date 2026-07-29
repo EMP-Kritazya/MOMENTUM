@@ -95,7 +95,7 @@ const createTables = async () => {
       REFERENCES WorkoutTemplates(template_id)
       ON DELETE CASCADE,
     
-    UNIQUE(user_id, template_id)
+    UNIQUE(user_id, template_id, date)
   );
 
   CREATE TABLE IF NOT EXISTS WorkoutTemplateExercises (
