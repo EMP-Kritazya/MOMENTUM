@@ -5,6 +5,8 @@ import QuestionStep from "../components/onboarding/QuestionStep";
 import StepIndicators from "../components/onboarding/StepIndicators";
 import { onboardingQuestions } from "../data/onboardingQuestions";
 import { useNavigate } from "react-router-dom";
+import ProfileStep from "../components/onboarding/ProfileStep";
+import Button from "../components/ui/Button";
 
 // Stores every profile and fitness answer collected during onboarding.
 const initialAnswers = {
