@@ -1,5 +1,6 @@
 import { pool } from "../config/database.js";
 
+// GET /api/workouttemplates
 export const getAllTemplates = async (req, res) => {
   try {
     const results = await pool.query(
@@ -7,35 +8,74 @@ export const getAllTemplates = async (req, res) => {
     );
     res.status(200).json(results.rows);
   } catch (error) {
-    res.status(500).json({
-      error: error.message,
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
+// GET /api/workouttemplates/:id
 export const getIndividualTemplate = async (req, res) => {
   try {
-    const id = req.params;
+    const { id } = req.params;
     const results = await pool.query(
       "SELECT * FROM workouttemplates WHERE template_id = $1",
       [id],
     );
 
     if (results.rows.length === 0) {
-      res.status(404).json({ error: "Template not Found" });
+      return res.status(404).json({ message: "Template not found" });
     }
-    res.staus(200).json(results.rows[0]);
+    res.status(200).json(results.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
+// GET /api/workouttemplates/:id/exercises
+export const getTemplateExercises = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const templateResult = await pool.query(
+      "SELECT * FROM workouttemplates WHERE template_id = $1",
+      [id],
+    );
+    if (templateResult.rows.length === 0) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    const template = templateResult.rows[0];
+
+    // Pulling out the exercises through the join table, in workout order.
+    const exercisesResult = await pool.query(
+      `SELECT e.exercise_id,
+              e.exercise_name,
+              e.target_muscle,
+              e.equipment_needed,
+              wte.sets,
+              wte.reps,
+              wte.exercise_order
+       FROM workouttemplateexercises wte
+       JOIN exercises e ON e.exercise_id = wte.exercise_id
+       WHERE wte.template_id = $1
+       ORDER BY wte.exercise_order ASC`,
+      [id],
+    );
+
+    res.status(200).json({
+      ...template,
+      exercises: exercisesResult.rows,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// POST /api/workouttemplates
 export const createWorkoutTemplate = async (req, res) => {
   try {
-    const title = req.body;
+    const { title } = req.body;
 
     if (!title) {
-      return res.status(400).json({ message: "Workout Title is Required" });
+      return res.status(400).json({ message: "Workout title is required" });
     }
 
     const results = await pool.query(
@@ -43,31 +83,52 @@ export const createWorkoutTemplate = async (req, res) => {
       [title],
     );
 
-    if (results.rows.length === 0) {
-      res.status(500).json({ message: "Error when creating the template" });
-    }
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(results.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-export const deleteWorkoutTemplate = async (req, res) => {
+// PATCH /api/workouttemplates/:id
+export const updateWorkoutTemplate = async (req, res) => {
   try {
-    const id = req.params;
+    const { id } = req.params;
+    const { title } = req.body;
 
     const results = await pool.query(
-      "DELETE from workouttemplates WHERE template_id = $1 RETURNING *",
+      `UPDATE workouttemplates
+       SET title = COALESCE($1, title)
+       WHERE template_id = $2
+       RETURNING *`,
+      [title, id],
+    );
+
+    if (results.rows.length === 0) {
+      return res.status(404).json({ message: "Workout template not found" });
+    }
+    res.status(200).json(results.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// DELETE /api/workouttemplates/:id
+export const deleteWorkoutTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const results = await pool.query(
+      "DELETE FROM workouttemplates WHERE template_id = $1 RETURNING *",
       [id],
     );
     if (results.rows.length === 0) {
-      return res.status(404).json({ message: "Workout Template not found" });
+      return res.status(404).json({ message: "Workout template not found" });
     }
-    return res.status(200).json({
-      message: "Workout Template deleted",
+    res.status(200).json({
+      message: "Workout template deleted",
       workoutTemplate: results.rows[0],
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };

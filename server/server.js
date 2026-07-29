@@ -5,6 +5,7 @@ import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
 import userRouter from "./routes/users.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
+import groupRouter from "./routes/groups.js";
 
 // create express app
 const app = express();
@@ -16,6 +17,7 @@ app.use("/api/exercises", exerciseRouter);
 app.use("/api/workouttemplates", workoutTemplateRouter);
 app.use("/api/users", userRouter);
 app.use("/api/workoutsessions", workoutSessionRouter);
+app.use("/api/groups", groupRouter);
 
 app.get("/", (req, res) => {
   res
