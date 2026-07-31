@@ -153,7 +153,7 @@ function OnboardingPage() {
       // Replace this console output with the onboarding API request later.
       const payload = buildUserPayload(answers);
       console.log("Onboarding payload:", payload);
-      nav("/");
+      nav("/dashboard");
       return;
     }
 
