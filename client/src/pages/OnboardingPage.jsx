@@ -5,6 +5,7 @@ import QuestionStep from "../components/onboarding/QuestionStep";
 import StepIndicators from "../components/onboarding/StepIndicators";
 import { onboardingQuestions } from "../data/onboardingQuestions";
 import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ProfileStep from "../components/onboarding/ProfileStep";
 import Button from "../components/ui/Button";
 
@@ -37,7 +38,7 @@ function OnboardingPage() {
   const [answers, setAnswers] = useState(initialAnswers);
   const [showProfileStep, setShowProfileStep] = useState(true);
   const [profileErrors, setProfileErrors] = useState(initialProfileErrors);
-  
+
   // Gets the active question, its answer, and whether the user may continue.
   const question = onboardingQuestions[currentStep];
   const currentAnswer = answers[question.id];
@@ -47,17 +48,17 @@ function OnboardingPage() {
 
   // Updates a profile field and clears its previous validation error.
   function handleProfileChange(event) {
-    const {name, value} = event.target
+    const { name, value } = event.target;
 
     setAnswers((current) => ({
       ...current,
       [name]: value,
-    }))
+    }));
 
     setProfileErrors((current) => ({
       ...current,
       [name]: "",
-    }))
+    }));
   }
 
   // Validates required profile fields and returns an error object.
@@ -67,33 +68,34 @@ function OnboardingPage() {
       lastName: "",
       username: "",
       email: "",
-    }
+    };
 
     if (!values.firstName.trim()) {
-      errors.firstName = "First name is required."
+      errors.firstName = "First name is required.";
     }
 
     if (!values.lastName.trim()) {
-      errors.lastName = "Last name is required."
-    }    
+      errors.lastName = "Last name is required.";
+    }
 
     if (!values.username.trim()) {
-      errors.username = "Username is required."
+      errors.username = "Username is required.";
     } else if (!/^[a-zA-Z0-9_]+$/.test(values.username.trim())) {
-      errors.username = "Username can only contain letters, numbers, and underscores."
+      errors.username =
+        "Username can only contain letters, numbers, and underscores.";
     }
-    
+
     if (!values.email.trim()) {
       errors.email = "Email is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
       errors.email = "Enter a valid email address.";
     }
-  return errors
+    return errors;
   }
 
   // Returns true when at least one profile validation message exists.
   function hasErrors(errors) {
-    return Object.values(errors).some(Boolean)
+    return Object.values(errors).some(Boolean);
   }
 
   // Saves either a single-choice answer or a multi-select equipment answer.
@@ -129,10 +131,10 @@ function OnboardingPage() {
 
   // Validates and normalizes profile data before showing fitness question one.
   function handleProfileContinue() {
-    const errors = validateProfile(answers)
-    setProfileErrors(errors)
+    const errors = validateProfile(answers);
+    setProfileErrors(errors);
 
-    if (hasErrors(errors)) return
+    if (hasErrors(errors)) return;
 
     setAnswers((current) => ({
       ...current,
@@ -199,9 +201,9 @@ function OnboardingPage() {
             {showProfileStep ? (
               <>
                 <ProfileStep
-                values={answers}
-                errors={profileErrors}
-                onChange={handleProfileChange}
+                  values={answers}
+                  errors={profileErrors}
+                  onChange={handleProfileChange}
                 />
 
                 <div className="mt-8">
@@ -215,23 +217,23 @@ function OnboardingPage() {
                 </div>
               </>
             ) : (
-                <>
-                  <QuestionStep
-                    key={question.id}
-                    question={question}
-                    stepNumber={currentStep + 1}
-                    value={currentAnswer}
-                    onSelect={handleSelect}
-                  />
-                  <OnboardingNavigation
-                    canContinue={canContinue}
-                    isFirstStep={false}
-                    isLastStep={currentStep === onboardingQuestions.length - 1}
-                    onBack={handleBack}
-                    onContinue={handleContinue}
-                  />
+              <>
+                <QuestionStep
+                  key={question.id}
+                  question={question}
+                  stepNumber={currentStep + 1}
+                  value={currentAnswer}
+                  onSelect={handleSelect}
+                />
+                <OnboardingNavigation
+                  canContinue={canContinue}
+                  isFirstStep={false}
+                  isLastStep={currentStep === onboardingQuestions.length - 1}
+                  onBack={handleBack}
+                  onContinue={handleContinue}
+                />
               </>
-              )}
+            )}
           </div>
 
           {/* Hides fitness step dots while the profile form is displayed. */}
@@ -241,12 +243,12 @@ function OnboardingPage() {
                 currentStep={currentStep}
                 totalSteps={onboardingQuestions.length}
               />
-            </div>  
+            </div>
           )}
         </section>
       </div>
     </main>
-  )
+  );
 }
 
 export default OnboardingPage;
