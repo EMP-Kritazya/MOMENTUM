@@ -25,3 +25,26 @@ export async function apiRequest(path, options = {}) {
     }
     return data
 }
+export function adminApiRequest(path, options = {}) {
+    let session;
+
+    try {
+      session = JSON.parse(
+        localStorage.getItem("momentumAdminSession"),
+      );
+    } catch {
+      session = null;
+    }
+
+    if (!session?.token) {
+      throw new Error("Administrator login required.");
+    }
+
+    return apiRequest(path, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${session.token}`,
+      },
+    });
+}
