@@ -1,5 +1,83 @@
 import { pool } from "../config/database.js";
 
+// Allowed onboarding values shared with the frontend form.
+const FITNESS_GOALS = new Set([
+  "build_muscle",
+  "lose_weight",
+  "improve_endurance",
+  "stay_active",
+]);
+
+const EXPERIENCE_LEVELS = new Set([
+  "beginner",
+  "some_experience",
+  "intermediate",
+  "advanced",
+]);
+
+const PREFERRED_LOCATIONS = new Set(["home", "gym", "outdoors", "mixed"]);
+
+const EQUIPMENT_OPTIONS = new Set([
+  "none",
+  "dumbbells",
+  "resistance_bands",
+  "full_gym",
+]);
+
+const WEEKLY_COMMITMENTS = new Set([2, 3, 4, 5]);
+
+// Validates untrusted onboarding data before it reaches PostgreSQL.
+function validateOnboarding(body) {
+  const errors = {};
+
+  const username = body.username?.trim();
+  const first_name = body.first_name?.trim();
+  const last_name = body.last_name?.trim();
+  const email = body.email?.trim();
+  const equipment = body.equipment_available;
+
+  if (!username) {
+    errors.username = "Username is required";
+  }
+  if (!first_name) {
+    errors.first_name = "First name is required";
+  }
+  if (!last_name) {
+    errors.last_name = "Last name is required";
+  }
+  if (!email) {
+    errors.email = "Email is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = "Enter a valid email address.";
+  }
+  if (!FITNESS_GOALS.has(body.fitness_goal)) {
+    errors.fitness_goal = "Select a supported fitness goal.";
+  }
+
+  if (!EXPERIENCE_LEVELS.has(body.experience_level)) {
+    errors.experience_level = "Select a supported experience level.";
+  }
+
+  if (!PREFERRED_LOCATIONS.has(body.preferred_location)) {
+    errors.preferred_location = "Select a supported workout location.";
+  }
+
+  if (
+    // Equipment is a multi-select field, so it must be a valid array.
+    !Array.isArray(equipment) ||
+    equipment.length === 0 ||
+    equipment.some((item) => !EQUIPMENT_OPTIONS.has(item))
+  ) {
+    errors.equipment_available = "Select at least one equipment option.";
+  }
+
+  if (!WEEKLY_COMMITMENTS.has(body.weekly_commitment)) {
+    errors.weekly_commitment = "Select a supported weekly commitment.";
+  }
+
+  return errors;
+}
+
 // GET /api/users
 export const getAllUsers = async (req, res) => {
   try {
@@ -30,6 +108,15 @@ export const getIndividualUser = async (req, res) => {
 
 // POST /api/users
 export const createUser = async (req, res) => {
+  // Returns all validation problems in one response.
+  const errors = validateOnboarding(req.body);
+
+  if (Object.keys(errors).length > 0) {
+    return res.status(400).json({
+      message: "Please correct onboarding fields",
+      errors,
+    });
+  }
   const {
     username,
     first_name,
@@ -40,12 +127,6 @@ export const createUser = async (req, res) => {
     equipment_available,
     weekly_commitment,
   } = req.body;
-
-  if (!first_name || !last_name) {
-    return res
-      .status(400)
-      .json({ message: "first_name and last_name are required" });
-  }
 
   try {
     const result = await pool.query(

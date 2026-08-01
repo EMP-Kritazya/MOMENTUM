@@ -1,3 +1,8 @@
 import dotenv from 'dotenv'
-dotenv.config({ path: '../.env' })
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
+dotenv.config({ path: path.resolve(dirname, "../.env") })
 

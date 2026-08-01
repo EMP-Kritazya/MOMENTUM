@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createOnboardingUser } from "../api/usersApi.js";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
 import OnboardingNavigation from "../components/onboarding/OnboardingNavigation";
 import QuestionStep from "../components/onboarding/QuestionStep";
@@ -37,6 +38,9 @@ function OnboardingPage() {
   const [answers, setAnswers] = useState(initialAnswers);
   const [showProfileStep, setShowProfileStep] = useState(true);
   const [profileErrors, setProfileErrors] = useState(initialProfileErrors);
+  // Tracks the final API request and any server error message.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   // Gets the active question, its answer, and whether the user may continue.
   const question = onboardingQuestions[currentStep];
@@ -146,19 +150,37 @@ function OnboardingPage() {
     setShowProfileStep(false);
   }
 
-  // Advances questions or prepares the completed frontend payload on step five.
-  function handleContinue() {
-    if (!canContinue) return;
+  // Advances questions, then submits the completed onboarding form.
+  async function handleContinue() {
+    if (!canContinue || isSubmitting) return;
 
-    if (currentStep === onboardingQuestions.length - 1) {
-      // Replace this console output with the onboarding API request later.
-      const payload = buildUserPayload(answers);
-      console.log("Onboarding payload:", payload);
-      nav("/dashboard");
+    if (currentStep !== onboardingQuestions.length - 1) {
+      setCurrentStep((step) => step + 1);
       return;
     }
+    setIsSubmitting(true);
+    setSubmitError("");
 
-    setCurrentStep((step) => step + 1);
+    try {
+      // Converts the UI state to the API's expected field names.
+      const payload = buildUserPayload(answers);
+      const createdUser = await createOnboardingUser(payload);
+
+      // Saves the created user for pages that need it after onboarding.
+      localStorage.setItem(
+        "momentumUser",
+        JSON.stringify(createdUser),
+      );
+      nav("/dashboard");
+    } catch (error) {
+      // Shows the server error without leaving the onboarding page.
+      setSubmitError(
+        error.message || "Failed to submit onboarding information.",
+      );
+    } finally {
+      // Re-enables submission whether the request succeeds or fails.
+      setIsSubmitting(false);
+    }
   }
 
   // Returns to the profile form from step one or to the previous question.
@@ -230,7 +252,13 @@ function OnboardingPage() {
                   isLastStep={currentStep === onboardingQuestions.length - 1}
                   onBack={handleBack}
                   onContinue={handleContinue}
+                  isSubmitting={isSubmitting}
                 />
+                {submitError && (
+                  <p role="alert" className="mt-4 text-sm font-medium text-red-400">
+                    {submitError}
+                  </p>
+                )}
               </>
             )}
           </div>

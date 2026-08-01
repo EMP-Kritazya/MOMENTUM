@@ -27,10 +27,13 @@ const createTables = async () => {
   const query = `
   CREATE TABLE IF NOT EXISTS Users (
     user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE,
+    username VARCHAR(50) NOT NULL UNIQUE,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash TEXT,
+    role VARCHAR(20) NOT NULL DEFAULT 'member'
+      CHECK (role IN ('member', 'admin')),
     fitness_goal VARCHAR(50),
     experience_level VARCHAR(30),
     equipment_available VARCHAR(50),
