@@ -2,7 +2,7 @@ import { NavLink } from "react-router-dom";
 import { Home, Calendar, Users, BookOpen, Flame } from "lucide-react";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: Home, end: true },
+  { to: "/dashboard", label: "Dashboard", icon: Home, end: true },
   { to: "/history", label: "History", icon: Calendar },
   { to: "/groups", label: "Groups", icon: Users },
   { to: "/library", label: "Exercises", icon: BookOpen },

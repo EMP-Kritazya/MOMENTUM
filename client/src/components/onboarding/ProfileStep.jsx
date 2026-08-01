@@ -1,5 +1,5 @@
 import TextInput from '../ui/TextInput'
-
+import { Link } from 'react-router-dom'
 /**
  * Displays the profile form that collects the user's name, username, and email.
  */
@@ -22,6 +22,16 @@ function ProfileStep({
 
             <p className='mt-4 text-base font-medium text-momentum-muted'>
                 We&apos;ll use this information to personalize your Momentum experience.
+            </p>
+
+            <p className='mt-4 text-sm text-momentum-muted'>
+                Are you an administrator?{" "}
+                <Link
+                    to='/admin/login'
+                    className='font-semibold text-momentum-line underline-offset-4 hover:underline focus:outline-none
+                    focus-visible:ring-2 focus-visible:ring-momentum-lime'>
+                        Sign in here
+                </Link>
             </p>
 
             <div className='mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2'>
