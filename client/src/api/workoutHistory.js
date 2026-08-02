@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3001/api";
+import { apiRequest } from "./apiClient.js";
 
 async function readJson(response) {
   const data = await response.json().catch(() => ({}));
@@ -22,19 +22,15 @@ export async function getWorkoutHistory(userId, filters, signal) {
     params.set("muscle", filters.muscle);
   }
 
-  const response = await fetch(
-    `${API_BASE_URL}/workoutsessions/user/${userId}/history?${params}`,
-    { signal },
-  );
-
-  return readJson(response);
+    return apiRequest(
+      `/api/workoutsessions/user/${userId}/history?${params}`,
+      { signal },
+    )
 }
 
 export async function getWorkoutTemplateDetails(templateId, signal) {
-  const response = await fetch(
-    `${API_BASE_URL}/workouttemplates/${templateId}/exercises`,
-    { signal },
-  );
-
-  return readJson(response);
+    return apiRequest(
+      `/api/workouttemplates/${templateId}/exercises`,
+      { signal },
+    );
 }
