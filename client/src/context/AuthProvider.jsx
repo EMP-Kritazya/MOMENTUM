@@ -6,7 +6,6 @@ import { AuthContext } from "./authContext.js";
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const nav = useNavigate();
 
   const refresh = useCallback(async () => {
     try {
