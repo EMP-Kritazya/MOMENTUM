@@ -1,4 +1,15 @@
 import { pool } from "../config/database.js";
+import { createToken } from "./authController.js";
+
+const addCookie = (res, userId, role) => {
+  const token = createToken(userId, role);
+  res.cookie("authToken", token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 15 * 60 * 1000,
+  });
+};
 
 // Allowed onboarding values shared with the frontend form.
 const FITNESS_GOALS = new Set([
@@ -129,26 +140,57 @@ export const createUser = async (req, res) => {
   } = req.body;
 
   try {
-    const result = await pool.query(
-      `INSERT INTO users
+    const user = await pool.query(
+      `SELECT user_id FROM users WHERE email = $1`,
+      [email],
+    );
+    let result;
+    // If user doesn;t exist; Create one
+    if (user.rows.length === 0) {
+      result = await pool.query(
+        `INSERT INTO users
         (username, first_name, last_name, email, fitness_goal,
          experience_level, equipment_available, weekly_commitment)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [
-        username,
-        first_name,
-        last_name,
-        email,
-        fitness_goal,
-        experience_level,
-        equipment_available,
-        weekly_commitment,
-      ],
-    );
-    res.status(201).json(result.rows[0]);
+        [
+          username,
+          first_name,
+          last_name,
+          email,
+          fitness_goal,
+          experience_level,
+          equipment_available,
+          weekly_commitment,
+        ],
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE users SET
+         fitness_goal = $1,
+         experience_level = $2,
+         equipment_available = $3,
+         weekly_commitment = $4,
+         WHERE email = $5
+         RETURNING *
+        `,
+        [
+          fitness_goal,
+          experience_level,
+          equipment_available,
+          weekly_commitment,
+          email,
+        ],
+      );
+    }
+
+    addCookie(res, result.rows[0].user_id, result.rows[0].role);
+
+    const isNewUser = user.rows.length === 0;
+
+    return res.status(isNewUser ? 201 : 200).json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
