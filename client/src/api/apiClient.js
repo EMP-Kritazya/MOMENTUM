@@ -5,9 +5,11 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001"
 export async function apiRequest(path, options = {}) {
     const response = await fetch(`${API_URL}${path}`, {
         ...options,
+        // Sends the httpOnly authToken cookie so protected routes stay authenticated.
+        credentials: "include",
         headers: {
             "Content-Type": "application/json",
-            ...options.headers,  
+            ...options.headers,
         }
     })
 
@@ -25,26 +27,9 @@ export async function apiRequest(path, options = {}) {
     }
     return data
 }
+// Admin authentication now rides on the httpOnly authToken cookie set at login,
+// which the browser attaches automatically via credentials: "include" in apiRequest.
+// No token is read from JS; the server authorizes admin routes from the cookie.
 export function adminApiRequest(path, options = {}) {
-    let session;
-
-    try {
-      session = JSON.parse(
-        localStorage.getItem("momentumAdminSession"),
-      );
-    } catch {
-      session = null;
-    }
-
-    if (!session?.token) {
-      throw new Error("Administrator login required.");
-    }
-
-    return apiRequest(path, {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${session.token}`,
-      },
-    });
+    return apiRequest(path, options);
 }

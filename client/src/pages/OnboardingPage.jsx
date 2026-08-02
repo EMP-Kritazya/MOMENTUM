@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createOnboardingUser } from "../api/usersApi.js";
+import { useAuth } from "../context/authContext.js";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
 import OnboardingNavigation from "../components/onboarding/OnboardingNavigation";
 import QuestionStep from "../components/onboarding/QuestionStep";
@@ -32,6 +33,7 @@ const initialProfileErrors = {
 
 function OnboardingPage() {
   const nav = useNavigate();
+  const { refresh } = useAuth();
 
   // Controls the active fitness question and all onboarding form data.
   const [currentStep, setCurrentStep] = useState(0);
@@ -164,13 +166,10 @@ function OnboardingPage() {
     try {
       // Converts the UI state to the API's expected field names.
       const payload = buildUserPayload(answers);
-      const createdUser = await createOnboardingUser(payload);
+      await createOnboardingUser(payload);
 
-      // Saves the created user for pages that need it after onboarding.
-      localStorage.setItem(
-        "momentumUser",
-        JSON.stringify(createdUser),
-      );
+      // The server set the auth cookie; sync shared auth state before navigating.
+      await refresh();
       nav("/dashboard");
     } catch (error) {
       // Shows the server error without leaving the onboarding page.
@@ -186,10 +185,10 @@ function OnboardingPage() {
   // Returns to the profile form from step one or to the previous question.
   function handleBack() {
     if (currentStep === 0) {
-      setShowProfileStep(true)
-      return
+      setShowProfileStep(true);
+      return;
     }
-    setCurrentStep(step => step - 1)
+    setCurrentStep((step) => step - 1);
   }
 
   // Converts camelCase React state into snake_case database field names.
@@ -204,7 +203,7 @@ function OnboardingPage() {
       preferred_location: values.preferredLocation,
       equipment_available: values.equipmentAvailable,
       weekly_commitment: values.weeklyCommitment,
-    }
+    };
   }
 
   return (
@@ -255,7 +254,10 @@ function OnboardingPage() {
                   isSubmitting={isSubmitting}
                 />
                 {submitError && (
-                  <p role="alert" className="mt-4 text-sm font-medium text-red-400">
+                  <p
+                    role="alert"
+                    className="mt-4 text-sm font-medium text-red-400"
+                  >
                     {submitError}
                   </p>
                 )}

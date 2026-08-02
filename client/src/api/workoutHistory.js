@@ -24,7 +24,7 @@ export async function getWorkoutHistory(userId, filters, signal) {
 
   const response = await fetch(
     `${API_BASE_URL}/workoutsessions/user/${userId}/history?${params}`,
-    { signal },
+    { signal, credentials: "include" },
   );
 
   return readJson(response);
@@ -33,7 +33,7 @@ export async function getWorkoutHistory(userId, filters, signal) {
 export async function getWorkoutTemplateDetails(templateId, signal) {
   const response = await fetch(
     `${API_BASE_URL}/workouttemplates/${templateId}/exercises`,
-    { signal },
+    { signal, credentials: "include" },
   );
 
   return readJson(response);

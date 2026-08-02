@@ -1,12 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import {
-  Home,
-  Calendar,
-  Users,
-  BookOpen,
-  Flame,
-  LogOut,
-} from "lucide-react";
+import { Home, Calendar, Users, BookOpen, Flame, LogOut } from "lucide-react";
+import { useAuth } from "../../context/authContext.js";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: Home, end: true },
@@ -15,41 +9,23 @@ const navItems = [
   { to: "/library", label: "Exercises", icon: BookOpen },
 ];
 
-function readStoredJson(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key));
-  } catch {
-    return null;
-  }
-}
-
 export default function Sidebar() {
   const navigate = useNavigate();
-  const adminSession = readStoredJson("momentumAdminSession");
-  const memberRecord = readStoredJson("momentumUser");
-  const memberUser = memberRecord?.user ?? memberRecord;
-  const currentUser = adminSession?.user ?? memberUser;
+  const { user, loading, logout } = useAuth();
 
-  const isAdmin = adminSession?.user?.role === "admin";
-  const firstName = currentUser?.first_name ?? currentUser?.firstName ?? "";
-  const lastName = currentUser?.last_name ?? currentUser?.lastName ?? "";
+  const firstName = user?.first_name ?? "";
+  const lastName = user?.last_name ?? "";
   const displayName =
-    `${firstName} ${lastName}`.trim() ||
-    currentUser?.username ||
-    "Momentum User";
+    `${firstName} ${lastName}`.trim() || user?.username || "Momentum User";
   const initials =
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
     displayName.slice(0, 2).toUpperCase();
+  const isAdmin = user?.role === "admin";
 
-  function handleLogout() {
-    if (isAdmin) {
-      localStorage.removeItem("momentumAdminSession");
-      navigate("/admin/login", { replace: true });
-      return;
-    }
+  async function handleLogout() {
+    await logout();
 
-    localStorage.removeItem("momentumUser");
-    navigate("/", { replace: true });
+    navigate(isAdmin ? "/admin/login" : "/", { replace: true });
   }
 
   return (
@@ -86,7 +62,7 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {currentUser && (
+      {user && (
         <div className="border-t border-border px-3 py-3">
           <button
             type="button"
@@ -100,17 +76,32 @@ export default function Sidebar() {
       )}
 
       <div className="px-4 py-4 border-t border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-            {initials}
+        {loading ? (
+          // Placeholder while the current user is being resolved.
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse shrink-0" />
+            <div className="h-3 w-24 rounded bg-secondary animate-pulse" />
           </div>
-          <div className="overflow-hidden">
-            <div className="text-sm font-medium truncate">{displayName}</div>
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
-              <Flame size={11} className="text-primary" /> 12 day streak
+        ) : user ? (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+              {initials}
+            </div>
+            <div className="overflow-hidden">
+              <div className="text-sm font-medium truncate">{displayName}</div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <Flame size={11} className="text-primary" /> 12 day streak
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <NavLink
+            to="/"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Sign in
+          </NavLink>
+        )}
       </div>
     </aside>
   );
