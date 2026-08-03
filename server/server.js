@@ -1,21 +1,26 @@
+import "./config/dotenv.js"
 import express from "express";
 import cors from "cors";
+import authRouter from "./routes/auth.js";
+import userRouter from "./routes/users.js";
 import { connectDB } from "./config/database.js";
 import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
-import userRouter from "./routes/users.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
 import groupRouter from "./routes/groups.js";
 
 // create express app
 const app = express();
 
+app.use(cors({
+  origin: "http://localhost:5173",
+}));
 app.use(express.json());
-app.use(cors());
 
 app.use("/api/exercises", exerciseRouter);
 app.use("/api/workouttemplates", workoutTemplateRouter);
 app.use("/api/users", userRouter);
+app.use("/api/auth", authRouter);
 app.use("/api/workoutsessions", workoutSessionRouter);
 app.use("/api/groups", groupRouter);
 

@@ -3,7 +3,8 @@
  */
 
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { loginAdmin } from "../api/authApi.js";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
 import Button from "../components/ui/Button";
 import TextInput from "../components/ui/TextInput";
@@ -18,11 +19,12 @@ function AdminLoginPage() {
         email: "",
         password: "",
     }
+    const nav = useNavigate();
 
     const [values, setValues] = useState(initialValues)
     const [errors, setErrors] = useState(initialErrors)
     const [serverError, setServerError] = useState("")
-    const [isSubmitting] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     function handleChange(event) {
         const { name, value } = event.target
@@ -61,15 +63,43 @@ function AdminLoginPage() {
         return Object.values(errors).some(Boolean)
     }
 
-    function handleSubmit(event) {
-    event.preventDefault();
+    async function handleSubmit(event) {
+      event.preventDefault();
 
-    const nextErrors = validateLogin(values);
-    setErrors(nextErrors);
+      const nextErrors = validateLogin(values);
+      setErrors(nextErrors);
 
-    if (hasErrors(nextErrors)) return;
+      if (hasErrors(nextErrors)) return;
+      if (isSubmitting) return
+      setIsSubmitting(true);
+      setServerError("");
 
-    console.log("Admin login UI is ready for API integration.");
+      try {
+        const result = await loginAdmin({
+          email: values.email,
+          password: values.password,
+        });
+
+        if (result.user?.role !== "admin") {
+          throw new Error("Administrator access required.");
+        }
+
+        localStorage.setItem(
+          "momentumAdminSession",
+          JSON.stringify({
+            token: result.token,
+            user: result.user,
+          }),
+        );
+
+        nav("/dashboard");
+
+      // Save the returned session and navigate.
+      } catch (error) {
+        setServerError(error.message);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
 
   return (

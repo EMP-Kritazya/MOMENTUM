@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { authenticateToken } from "../middleware/authenticateToken.js";
+import { requireAdmin } from "../middleware/requireAdmin.js";
 import {
   getAllUsers,
   getIndividualUser,
