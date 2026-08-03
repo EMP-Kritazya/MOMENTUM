@@ -182,6 +182,10 @@ React Router rewrite:
 
 ## Final walkthrough
 
-<!-- TODO: Paste the uploaded final walkthrough GIF here. -->
+
+
+https://github.com/user-attachments/assets/7dd2eb01-6705-4075-9825-a1eeec2981a2
+
+
 
 
