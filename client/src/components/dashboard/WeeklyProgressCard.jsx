@@ -2,6 +2,26 @@ import { CheckCircle2, Clock } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import StatItem from "./StatItem";
 
+export const weeklyProgress = {
+  title: "This Week's Progress",
+  subtitle: "Last 8 weeks",
+  // Relative bar heights (0–1) for the mini chart.
+  bars: [
+    { label: "W1", value: 0.45 },
+    { label: "W2", value: 0.5 },
+    { label: "W3", value: 0.4 },
+    { label: "W4", value: 0.72 },
+    { label: "W5", value: 0.6 },
+    { label: "W6", value: 0.68 },
+    { label: "W7", value: 0.85 },
+    { label: "W8", value: 0.7 },
+  ],
+  workoutsCompleted: 4,
+  workoutsGoal: 5,
+  activeMinutes: 185,
+  weeklyGoalPercent: 80,
+};
+
 function MiniBarChart({ bars }) {
   return (
     <div className="flex h-24 items-end justify-between gap-2">
@@ -34,7 +54,7 @@ export default function WeeklyProgressCard({ progress }) {
     workoutsGoal,
     activeMinutes,
     weeklyGoalPercent,
-  } = progress;
+  } = weeklyProgress;
 
   return (
     <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">

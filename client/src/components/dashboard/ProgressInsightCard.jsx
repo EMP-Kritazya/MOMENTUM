@@ -1,8 +1,17 @@
 import { TrendingUp } from "lucide-react";
 
+export const progressInsight = {
+  headline:
+    "You've completed 47 workouts. That's more than you had last month 🔥",
+  subline:
+    "You're in the top 20% of users who reach week 6. Keep the streak alive.",
+  deltaPercent: 12,
+  deltaLabel: "vs. last month",
+};
+
 // Motivational Progress Insight Card
-export default function ProgressInsightCard({ insight }) {
-  const { headline, subline, deltaPercent, deltaLabel } = insight;
+export default function ProgressInsightCard() {
+  const { headline, subline, deltaPercent, deltaLabel } = progressInsight;
 
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-[#3B4627] bg-momentum-panel p-6 sm:flex-row sm:items-center sm:justify-between bg-linear-to-r from-[#273410]/50 to-[#12151E]">
