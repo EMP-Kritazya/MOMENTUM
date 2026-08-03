@@ -22,15 +22,19 @@ export async function getWorkoutHistory(userId, filters, signal) {
     params.set("muscle", filters.muscle);
   }
 
-    return apiRequest(
-      `/api/workoutsessions/user/${userId}/history?${params}`,
-      { signal },
-    )
+  const response = await fetch(
+    `${API_BASE_URL}/workoutsessions/user/${userId}/history?${params}`,
+    { signal, credentials: "include" },
+  );
+
+  return readJson(response);
 }
 
 export async function getWorkoutTemplateDetails(templateId, signal) {
-    return apiRequest(
-      `/api/workouttemplates/${templateId}/exercises`,
-      { signal },
-    );
+  const response = await fetch(
+    `${API_BASE_URL}/workouttemplates/${templateId}/exercises`,
+    { signal, credentials: "include" },
+  );
+
+  return readJson(response);
 }

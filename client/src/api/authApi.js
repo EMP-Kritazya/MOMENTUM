@@ -7,3 +7,11 @@ export function loginAdmin(credentials) {
     body: JSON.stringify(credentials),
   });
 }
+
+export function getCurrentUser() {
+  return apiRequest("/api/auth/me");
+}
+
+export function logoutUser() {
+  return apiRequest("/api/auth/logout", { method: "POST" });
+}
