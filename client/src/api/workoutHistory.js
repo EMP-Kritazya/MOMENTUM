@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3001/api";
+import { apiRequest } from "./apiClient.js";
 
 async function readJson(response) {
   const data = await response.json().catch(() => ({}));
