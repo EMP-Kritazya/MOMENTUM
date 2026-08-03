@@ -1,0 +1,112 @@
+import { NavLink, useNavigate } from "react-router-dom";
+import { Home, Calendar, Users, BookOpen, Flame, LogOut } from "lucide-react";
+import { useAuth } from "../../context/authContext.js";
+
+const navItems = [
+  { to: "/dashboard", label: "Dashboard", icon: Home, end: true },
+  { to: "/history", label: "History", icon: Calendar },
+  { to: "/groups", label: "Groups", icon: Users },
+  { to: "/library", label: "Exercises", icon: BookOpen },
+];
+
+export default function Sidebar() {
+  const navigate = useNavigate();
+  const { user, loading, logout } = useAuth();
+
+  if (!user) {
+    navigate("/");
+  }
+
+  const firstName = user?.first_name ?? "";
+  const lastName = user?.last_name ?? "";
+  const displayName =
+    `${firstName} ${lastName}`.trim() || user?.username || "Momentum User";
+  const initials =
+    `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
+    displayName.slice(0, 2).toUpperCase();
+  const isAdmin = user?.role === "admin";
+
+  async function handleLogout() {
+    await logout();
+
+    navigate(isAdmin ? "/admin/login" : "/", { replace: true });
+  }
+
+  return (
+    <aside
+      className="w-56 border-r border-border flex flex-col shrink-0"
+      style={{ background: "var(--sidebar)" }}
+    >
+      <div className="px-6 py-5 border-b border-border">
+        <span
+          className="text-xl font-bold tracking-tight"
+          style={{ fontFamily: "'Fraunces', serif" }}
+        >
+          <span className="text-primary">M</span>omentum
+        </span>
+      </div>
+
+      <nav className="flex-1 px-3 py-4 space-y-0.5">
+        {navItems.map(({ to, label, icon: Icon, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={({ isActive }) =>
+              `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
+                isActive
+                  ? "bg-primary text-primary-foreground font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`
+            }
+          >
+            <Icon size={16} />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {user && (
+        <div className="border-t border-border px-3 py-3">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <LogOut size={16} aria-hidden="true" />
+            Log out
+          </button>
+        </div>
+      )}
+
+      <div className="px-4 py-4 border-t border-border">
+        {loading ? (
+          // Placeholder while the current user is being resolved.
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-secondary animate-pulse shrink-0" />
+            <div className="h-3 w-24 rounded bg-secondary animate-pulse" />
+          </div>
+        ) : user ? (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+              {initials}
+            </div>
+            <div className="overflow-hidden">
+              <div className="text-sm font-medium truncate">{displayName}</div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <Flame size={11} className="text-primary" /> 12 day streak
+              </div>
+            </div>
+          </div>
+        ) : (
+          <NavLink
+            to="/"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            Sign in
+          </NavLink>
+        )}
+      </div>
+    </aside>
+  );
+}
