@@ -70,7 +70,7 @@ tasks only after verifying them in the live application.
 
 ## Final Demo GIF
 
-🔗 **TODO: Upload the final walkthrough GIF to GitHub and paste its link here.**
+https://github.com/user-attachments/assets/7dd2eb01-6705-4075-9825-a1eeec2981a2
 
 The walkthrough should demonstrate:
 
