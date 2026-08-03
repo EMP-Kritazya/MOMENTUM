@@ -5,7 +5,7 @@ const addCookie = (res, userId, role) => {
   const token = createToken(userId, role);
   res.cookie("authToken", token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
     maxAge: 15 * 60 * 1000,
   });

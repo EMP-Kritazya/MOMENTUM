@@ -14,9 +14,13 @@ import { authenticateToken } from "./middleware/authenticateToken.js";
 // create express app
 const app = express();
 
+const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
+  Boolean,
+);
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     // Required so the browser will send/accept the httpOnly authToken cookie.
     credentials: true,
   }),
