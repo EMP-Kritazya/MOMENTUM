@@ -90,7 +90,7 @@ Users can create or join small accountability groups where members encourage one
 
 Users can browse a searchable exercise database containing exercise descriptions, target muscle groups, difficulty levels, and equipment requirements.
 
-[gif goes here]
+<img src='./milestones/gifs/ExerciseLibraryDemo.gif' title='Video Walkthrough' alt='Video Walkthrough' />
 
 ---
 
