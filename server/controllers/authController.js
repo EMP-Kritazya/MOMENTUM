@@ -15,7 +15,7 @@ export const createToken = (userId, role = "member") => {
 const setAuthCookie = (res, token) => {
   res.cookie("authToken", token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 1000, // 1 hour, matching the token expiry
   });
@@ -119,7 +119,7 @@ export async function getMe(req, res) {
 export function logout(req, res) {
   res.clearCookie("authToken", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
   });
   return res.status(200).json({ message: "Logged out" });
