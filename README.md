@@ -73,7 +73,8 @@ The home dashboard displays workout streaks, weekly progress, completed workouts
 
 Users can view, update, and remove completed workout logs, allowing them to maintain an accurate record of their fitness progress.
 
-[gif goes here]
+<img width="1389" height="673" alt="history_demo" src="https://github.com/user-attachments/assets/5f8a7843-5921-4a74-9a8e-3efdcc4b92f2" />
+
 
 ---
 
