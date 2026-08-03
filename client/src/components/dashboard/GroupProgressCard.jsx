@@ -1,8 +1,20 @@
 import { Users, Flame } from "lucide-react";
 
-/**
- * A single group member row: avatar initial, name and today's completion status.
- */
+export const groupProgress = {
+  name: "Morning Warriors",
+  completedToday: 5,
+  totalMembers: 6,
+  streakDays: 12,
+  members: [
+    { id: 1, name: "Alex R.", initial: "A", status: "done" },
+    { id: 2, name: "Jordan M.", initial: "J", status: "done" },
+    { id: 3, name: "Sam K.", initial: "S", status: "pending" },
+    { id: 4, name: "Chris L.", initial: "C", status: "done" },
+    { id: 5, name: "Taylor B.", initial: "T", status: "done" },
+    { id: 6, name: "You", initial: "Y", status: "done", isCurrentUser: true },
+  ],
+};
+
 function MemberRow({ member }) {
   const isDone = member.status === "done";
 
@@ -12,7 +24,7 @@ function MemberRow({ member }) {
         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
           member.isCurrentUser
             ? "bg-momentum-lime text-momentum-bg"
-            : "bg-white/[0.06] text-momentum-muted"
+            : "bg-white/6 text-momentum-muted"
         }`}
       >
         {member.initial}
@@ -20,7 +32,9 @@ function MemberRow({ member }) {
 
       <span
         className={`text-sm ${
-          member.isCurrentUser ? "font-semibold text-momentum-lime" : "text-white"
+          member.isCurrentUser
+            ? "font-semibold text-momentum-lime"
+            : "text-white"
         }`}
       >
         {member.name}
@@ -33,7 +47,9 @@ function MemberRow({ member }) {
           }`}
           aria-hidden="true"
         />
-        <span className={isDone ? "text-momentum-muted" : "text-momentum-muted"}>
+        <span
+          className={isDone ? "text-momentum-muted" : "text-momentum-muted"}
+        >
           {isDone ? "Done" : "Pending"}
         </span>
       </span>
@@ -41,12 +57,9 @@ function MemberRow({ member }) {
   );
 }
 
-/**
- * Group progress card: today's completion count, the member roster and the
- * shared group streak.
- */
-export default function GroupProgressCard({ group }) {
-  const { name, completedToday, totalMembers, streakDays, members } = group;
+export default function GroupProgressCard() {
+  const { name, completedToday, totalMembers, streakDays, members } =
+    groupProgress;
 
   return (
     <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">

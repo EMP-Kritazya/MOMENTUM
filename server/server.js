@@ -29,7 +29,7 @@ app.use("/api/exercises", exerciseRouter);
 app.use("/api/workouttemplates", workoutTemplateRouter);
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/workoutsessions", workoutSessionRouter);
+app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
 app.use("/api/groups", groupRouter);
 
 app.get("/", (req, res) => {

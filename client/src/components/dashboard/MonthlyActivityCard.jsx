@@ -1,7 +1,20 @@
 import { Activity } from "lucide-react";
 
-export default function MonthlyActivityCard({ activity }) {
-  const { totalWorkouts, weekdayLabels, grid } = activity;
+export const monthlyActivity = {
+  totalWorkouts: 18,
+  weekdayLabels: ["M", "T", "W", "T", "F", "S", "S"],
+  // 5 rows (weeks) × 7 columns (days)
+  grid: [
+    [false, true, true, true, true, false, false],
+    [true, true, false, true, true, false, false],
+    [true, false, true, true, false, true, false],
+    [true, true, false, false, true, false, false],
+    [true, true, false, true, false, false, false],
+  ],
+};
+
+export default function MonthlyActivityCard() {
+  const { totalWorkouts, weekdayLabels, grid } = monthlyActivity;
 
   return (
     <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
