@@ -13,7 +13,7 @@ export default function App() {
     <Routes>
       {/* Public page that does not display the application sidebar*/}
       <Route path="/" element={<OnboardingPage />} />
-      <Route path="/admin/login" element={<AdminLoginPage/>}></Route>
+      <Route path="/admin/login" element={<AdminLoginPage />}></Route>
 
       {/* Everything else shares the sidebar layout */}
       <Route element={<AppLayout />}>

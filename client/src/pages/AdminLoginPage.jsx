@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { loginAdmin } from "../api/authApi.js";
+import { useAuth } from "../context/authContext.js";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
 import Button from "../components/ui/Button";
 import TextInput from "../components/ui/TextInput";
@@ -20,6 +21,7 @@ function AdminLoginPage() {
         password: "",
     }
     const nav = useNavigate();
+    const { refresh } = useAuth();
 
     const [values, setValues] = useState(initialValues)
     const [errors, setErrors] = useState(initialErrors)
@@ -84,17 +86,10 @@ function AdminLoginPage() {
           throw new Error("Administrator access required.");
         }
 
-        localStorage.setItem(
-          "momentumAdminSession",
-          JSON.stringify({
-            token: result.token,
-            user: result.user,
-          }),
-        );
-
+        // The server set an httpOnly authToken cookie; nothing to persist in JS.
+        // Refresh shared auth state so the sidebar reflects the session now.
+        await refresh();
         nav("/dashboard");
-
-      // Save the returned session and navigate.
       } catch (error) {
         setServerError(error.message);
       } finally {
