@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   getGroupMembers,
-  joinGroup,
   leaveGroup,
 } from "../controllers/group.js";
 
@@ -9,7 +8,6 @@ import {
 const router = Router({ mergeParams: true });
 
 router.get("/", getGroupMembers);
-router.post("/", joinGroup);
-router.delete("/:userId", leaveGroup);
+router.delete("/me", leaveGroup);
 
 export default router;

@@ -80,6 +80,7 @@ const createTables = async () => {
     group_id SERIAL PRIMARY KEY,
     group_name VARCHAR(100) NOT NULL,
     description TEXT,
+    invite_code VARCHAR(12) NOT NULL UNIQUE,
     created_by_user_id INTEGER REFERENCES Users(user_id),
     current_streak INTEGER DEFAULT 0
   );
@@ -87,22 +88,18 @@ const createTables = async () => {
   CREATE TABLE IF NOT EXISTS GroupMembers (
     member_id SERIAL PRIMARY KEY,
 
-    group_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_admin BOOLEAN DEFAULT FALSE,
-    daily_status VARCHAR(20),
-    current_streak INTEGER DEFAULT 0,
-
-    FOREIGN KEY (group_id)
+    group_id INTEGER NOT NULL
       REFERENCES AccountabilityGroups(group_id)
       ON DELETE CASCADE,
-
-    FOREIGN KEY (user_id)
+    user_id INTEGER NOT NULL
       REFERENCES Users(user_id)
       ON DELETE CASCADE,
-    
+
+    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    daily_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+      CHECK (daily_status IN ('pending', 'done')),
+    current_streak INTEGER NOT NULL DEFAULT 0,
     UNIQUE(group_id, user_id)
   );
   
@@ -143,6 +140,15 @@ const createTables = async () => {
       REFERENCES Exercises(exercise_id) 
       ON UPDATE CASCADE
   );
+
+  CREATE INDEX IF NOT EXISTS idx_groupmembers_user_id
+    ON GroupMembers(user_id);
+
+  CREATE INDEX IF NOT EXISTS idx_groupmembers_group_id
+    ON GroupMembers(group_id);
+
+  CREATE INDEX IF NOT EXISTS idx_workoutsessions_user_date
+    ON WorkoutSessions(user_id, date);
   `;
 
   try {
