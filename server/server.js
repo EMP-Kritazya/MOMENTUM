@@ -9,14 +9,14 @@ import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
 import groupRouter from "./routes/groups.js";
-import { authenticateToken } from "./middleware/authenticateToken.js";
 
 // create express app
 const app = express();
+const clientOrigin = process.env.CLIENT_URL ?? "http://localhost:5173";
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: clientOrigin,
     // Required so the browser will send/accept the httpOnly authToken cookie.
     credentials: true,
   }),
@@ -24,6 +24,11 @@ app.use(
 app.use(express.json());
 // Parses the authToken cookie into req.cookies for authenticateToken.
 app.use(cookieParser());
+
+// Render uses this endpoint to confirm that the web service is responsive.
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 app.use("/api/exercises", exerciseRouter);
 app.use("/api/workouttemplates", workoutTemplateRouter);

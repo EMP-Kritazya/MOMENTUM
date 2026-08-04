@@ -3,10 +3,11 @@ import { createToken } from "./authController.js";
 
 const addCookie = (res, userId, role) => {
   const token = createToken(userId, role);
+  const isProduction = process.env.NODE_ENV === "production";
   res.cookie("authToken", token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: isProduction ? "none" : "lax",
+    secure: isProduction,
     maxAge: 15 * 60 * 1000,
   });
 };
