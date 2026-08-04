@@ -65,7 +65,8 @@ const createTables = async () => {
     fitness_goal VARCHAR(50),
     experience_level VARCHAR(30),
     equipment_available VARCHAR(50),
-    weekly_commitment INTEGER
+    weekly_commitment INTEGER,
+    current_streak INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS Exercises (
@@ -114,7 +115,7 @@ const createTables = async () => {
     user_id INT NOT NULL,
     template_id INT NOT NULL,
     date DATE NOT NULL,
-    duration_minutes INT NOT NULL,
+    duration_minutes INT DEFAULT 0,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (user_id) 
       REFERENCES Users(user_id)
@@ -122,23 +123,27 @@ const createTables = async () => {
     FOREIGN KEY (template_id) 
       REFERENCES WorkoutTemplates(template_id)
       ON DELETE CASCADE,
+    FOREIGN KEY (template_id)
+      REFERENCES WorkoutTemplates(template_id)
+      ON UPDATE CASCADE,
     
     UNIQUE(user_id, template_id, date)
   );
 
   CREATE TABLE IF NOT EXISTS WorkoutTemplateExercises (
-    template_id INT NOT NULL,
+    template_exercise_id SERIAL PRIMARY KEY,
+    session_id INT NOT NULL,
     exercise_id INT NOT NULL,
     sets INT NOT NULL,
     reps INT NOT NULL,
     exercise_order INT NOT NULL,
-    PRIMARY KEY (template_id, exercise_id),
-    FOREIGN KEY (template_id)
-      REFERENCES WorkoutTemplates(template_id)
+    FOREIGN KEY (session_id)
+      REFERENCES WorkoutSessions(session_id)
       ON UPDATE CASCADE,
     FOREIGN KEY (exercise_id) 
       REFERENCES Exercises(exercise_id) 
       ON UPDATE CASCADE
+    
   );
 
   CREATE INDEX IF NOT EXISTS idx_groupmembers_user_id
@@ -278,7 +283,6 @@ const seedTables = async () => {
   await seedAdmin();
   await seedExerciseTable();
   await seedWorkoutTemplateTable();
-  await seedWorkoutTemplateExercisesTable();
 };
 
 seedTables();

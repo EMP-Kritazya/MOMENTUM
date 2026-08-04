@@ -13,6 +13,10 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
 
+  if (!user) {
+    navigate("/");
+  }
+
   const firstName = user?.first_name ?? "";
   const lastName = user?.last_name ?? "";
   const displayName =

@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.js";
 import userRouter from "./routes/users.js";
+import progressRouter from "./routes/progressInsight.js";
 import { connectDB } from "./config/database.js";
 import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
@@ -12,11 +13,14 @@ import groupRouter from "./routes/groups.js";
 
 // create express app
 const app = express();
-const clientOrigin = process.env.CLIENT_URL ?? "http://localhost:5173";
+
+const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
+  Boolean,
+);
 
 app.use(
   cors({
-    origin: clientOrigin,
+    origin: allowedOrigins,
     // Required so the browser will send/accept the httpOnly authToken cookie.
     credentials: true,
   }),
@@ -34,8 +38,9 @@ app.use("/api/exercises", exerciseRouter);
 app.use("/api/workouttemplates", workoutTemplateRouter);
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
-app.use("/api/workoutsessions", workoutSessionRouter);
+app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
 app.use("/api/groups", groupRouter);
+app.use("/api/progressInsight", authenticateToken, progressRouter);
 
 app.get("/", (req, res) => {
   res

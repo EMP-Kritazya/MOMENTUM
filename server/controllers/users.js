@@ -3,11 +3,10 @@ import { createToken } from "./authController.js";
 
 const addCookie = (res, userId, role) => {
   const token = createToken(userId, role);
-  const isProduction = process.env.NODE_ENV === "production";
   res.cookie("authToken", token, {
     httpOnly: true,
-    sameSite: isProduction ? "none" : "lax",
-    secure: isProduction,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 15 * 60 * 1000,
   });
 };
@@ -151,8 +150,8 @@ export const createUser = async (req, res) => {
       result = await pool.query(
         `INSERT INTO users
         (username, first_name, last_name, email, fitness_goal,
-         experience_level, equipment_available, weekly_commitment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         experience_level, equipment_available, weekly_commitment, current_streak)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
         [
           username,
@@ -163,19 +162,22 @@ export const createUser = async (req, res) => {
           experience_level,
           equipment_available,
           weekly_commitment,
+          0,
         ],
       );
     } else {
       result = await pool.query(
         `UPDATE users SET
-         fitness_goal = $1,
-         experience_level = $2,
-         equipment_available = $3,
-         weekly_commitment = $4,
-         WHERE email = $5
+          username = $1,
+         fitness_goal = $2,
+         experience_level = $3,
+         equipment_available = $4,
+         weekly_commitment = $5
+         WHERE email = $6
          RETURNING *
         `,
         [
+          username,
           fitness_goal,
           experience_level,
           equipment_available,

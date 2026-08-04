@@ -13,11 +13,10 @@ export const createToken = (userId, role = "member") => {
 
 // Sets the auth token as an httpOnly cookie so it is never exposed to client JS.
 const setAuthCookie = (res, token) => {
-  const isProduction = process.env.NODE_ENV === "production";
   res.cookie("authToken", token, {
     httpOnly: true,
-    sameSite: isProduction ? "none" : "lax",
-    secure: isProduction,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 1000, // 1 hour, matching the token expiry
   });
 };
@@ -98,8 +97,8 @@ export async function getMe(req, res) {
 
   try {
     const result = await pool.query(
-      `SELECT user_id, username, first_name, last_name, email, role
-       FROM Users
+      `SELECT user_id, username, first_name, last_name, email, role, current_streak
+       FROM users
        WHERE user_id = $1
        LIMIT 1`,
       [userId],
@@ -118,11 +117,10 @@ export async function getMe(req, res) {
 
 // Clears the auth cookie. Options must match those used when the cookie was set.
 export function logout(req, res) {
-  const isProduction = process.env.NODE_ENV === "production";
   res.clearCookie("authToken", {
     httpOnly: true,
-    sameSite: isProduction ? "none" : "lax",
-    secure: isProduction,
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
   });
   return res.status(200).json({ message: "Logged out" });
 }
