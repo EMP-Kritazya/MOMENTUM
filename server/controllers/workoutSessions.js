@@ -59,6 +59,7 @@ const GOAL_SCHEME = {
   improve_endurance: { sets: 3, reps: 15 },
   stay_active: { sets: 3, reps: 10 },
 };
+
 const DEFAULT_SCHEME = { sets: 3, reps: 10 };
 
 const DIFFICULTY_LABEL = {
@@ -175,53 +176,63 @@ function fillSlots(candidates, slots) {
   return chosen;
 }
 
-async function createTemplateExercises(sessionId, lastSessionId) {
+async function createTemplateExercises(lastSessionId, userId, today) {
   const client = await pool.connect();
   try {
-    // Load the session's template plus the owner's onboarding preferences.
-    const context = await client.query(
-      `SELECT ws.template_id,
-              u.experience_level,
-              u.fitness_goal,
-              u.equipment_available
-         FROM workoutsessions ws
-         JOIN users u ON u.user_id = ws.user_id
-        WHERE ws.session_id = $1`,
-      [sessionId],
-    );
-    if (context.rows.length === 0) {
-      throw new Error(`Session ${sessionId} not found`);
-    }
-    const {
-      template_id: templateId,
-      experience_level,
-      fitness_goal,
-      equipment_available,
-    } = context.rows[0];
-
-    // Deciding the split and difficulty band.
     let split;
     let difficulties;
     let previousExerciseIds = [];
+
+    const previous = await client.query(
+      `SELECT DISTINCT e.exercise_id, e.target_muscle
+           FROM workouttemplateexercises wte
+           JOIN exercises e ON e.exercise_id = wte.exercise_id
+          WHERE wte.session_id = $1`,
+      [lastSessionId],
+    );
+    previousExerciseIds = previous.rows.map((row) => row.exercise_id);
+    const previousSplit = classifySplit(
+      previous.rows.map((row) => row.target_muscle),
+    );
 
     if (lastSessionId === -1 || lastSessionId == null) {
       // First workout
       split = "upper";
     } else {
-      const previous = await client.query(
-        `SELECT DISTINCT e.exercise_id, e.target_muscle
-           FROM workouttemplateexercises wte
-           JOIN exercises e ON e.exercise_id = wte.exercise_id
-          WHERE wte.session_id = $1`,
-        [lastSessionId],
-      );
-      previousExerciseIds = previous.rows.map((row) => row.exercise_id);
-      const previousSplit = classifySplit(
-        previous.rows.map((row) => row.target_muscle),
-      );
       split = NEXT_SPLIT[previousSplit];
-      difficulties = EXPERIENCE_DIFFICULTY[experience_level] ?? ["beginner"];
     }
+
+    // Load the session's template plus the owner's onboarding preferences.
+    const context = await client.query(
+      `SELECT
+              u.experience_level,
+              u.fitness_goal,
+              u.equipment_available
+         FROM users u WHERE user_id = $1`,
+      [userId],
+    );
+    if (context.rows.length === 0) {
+      throw new Error(`User ${userId} not found`);
+    }
+    const { experience_level, fitness_goal, equipment_available } =
+      context.rows[0];
+
+    difficulties = EXPERIENCE_DIFFICULTY[experience_level] ?? ["beginner"];
+    const template_name = buildTitle(experience_level, split);
+    const response = await client.query(
+      `SELECT template_id FROM workouttemplates where title = $1`,
+      [template_name],
+    );
+    const templateId = response.rows[0].template_id;
+
+    const created = await pool.query(
+      `INSERT INTO workoutsessions
+         (user_id, template_id, date, duration_minutes, completed)
+       VALUES ($1, $2, $3, $4, FALSE)
+       RETURNING *`,
+      [userId, templateId, today, 0],
+    );
+    const sessionId = created.rows[0].session_id;
 
     // Translate preferences into exercise-table filters.
     const equipment = mapUserEquipment(equipment_available);
@@ -279,11 +290,6 @@ async function createTemplateExercises(sessionId, lastSessionId) {
          (session_id, exercise_id, sets, reps, exercise_order)
        VALUES ${placeholders.join(", ")}`,
       values,
-    );
-
-    await client.query(
-      `UPDATE workouttemplates SET title = $1 WHERE template_id = $2`,
-      [buildTitle(experience_level, split), templateId],
     );
 
     await client.query("COMMIT");
@@ -378,7 +384,7 @@ export const todaysSession = async (req, res) => {
 
     // Find the last workout
     const previous = await pool.query(
-      `SELECT session_id
+      `SELECT session_id, template_id
          FROM workoutsessions
         WHERE user_id = $1
         ORDER BY date DESC, session_id DESC
@@ -386,24 +392,20 @@ export const todaysSession = async (req, res) => {
       [userId],
     );
     const lastSessionId = previous.rows[0]?.session_id ?? -1;
+    const templateId = previous.rows[0]?.template_id ?? -1;
 
     // just so the FK is satisfied
-    const placeholder = await pool.query(
-      `INSERT INTO workouttemplates (title) VALUES ($1) RETURNING template_id`,
-      ["Generating workout…"],
-    );
-    const templateId = placeholder.rows[0].template_id;
+    // const placeholder = await pool.query(
+    //   `INSERT INTO workouttemplates (title) VALUES ($1) RETURNING template_id`,
+    //   ["Generating workout…"],
+    // );
+    // const templateId = placeholder.rows[0].template_id;
 
-    const created = await pool.query(
-      `INSERT INTO workoutsessions
-         (user_id, template_id, date, duration_minutes, completed)
-       VALUES ($1, $2, $3, $4, FALSE)
-       RETURNING *`,
-      [userId, templateId, today, 0],
-    );
-    const session = created.rows[0];
+    // Undertand last workout
 
-    await createTemplateExercises(session.session_id, lastSessionId);
+    // Deciding the split and difficulty band.
+
+    await createTemplateExercises(lastSessionId, userId, today);
 
     return res.status(201).json(await loadWorkoutPayload(session));
   } catch (error) {

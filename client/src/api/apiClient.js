@@ -1,7 +1,7 @@
 // Uses the deployed API URL when configured, otherwise the local server.
 const API_URL = import.meta.env.PROD
   ? "https://momentum-server-oigp.onrender.com"
-  : "/api";
+  : "http://localhost:3001";
 
 // Sends a request and provides consistent JSON and error handling.
 export async function apiRequest(path, options = {}) {
