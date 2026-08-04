@@ -2,6 +2,7 @@ import { ArrowRight, Clock, Zap, Target } from "lucide-react";
 import WorkoutExerciseList from "./WorkoutExerciseList";
 import { getUserWorkout } from "../../api/usersApi";
 import { useState, useEffect } from "react";
+import { CardShell } from "./CardShell";
 
 function MetaStat({ icon: Icon, children }) {
   return (
@@ -55,19 +56,6 @@ function toTodayWorkout({ session, title, exercises }) {
       scheme: `${exercise.sets} × ${exercise.reps}`,
     })),
   };
-}
-
-// Shared card wrapper so loading/error/ready states keep the same frame.
-function CardShell({ children }) {
-  return (
-    <section className="relative overflow-hidden rounded-3xl border border-[#3B4627] bg-[#12151E] p-6 sm:p-8">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-24 -top-24 h-82 w-92 rounded-full bg-[#273410] blur-3xl"
-      />
-      <div className="relative">{children}</div>
-    </section>
-  );
 }
 
 // Generated WorkoutPlan Card Component
@@ -185,14 +173,6 @@ export default function TodaysWorkoutCard() {
         <div className="mt-8">
           <WorkoutExerciseList exercises={exercises} />
         </div>
-
-        <button
-          type="button"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm text-momentum-muted transition-colors hover:text-white"
-        >
-          View full details &amp; muscle breakdown
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
       </div>
     </CardShell>
   );

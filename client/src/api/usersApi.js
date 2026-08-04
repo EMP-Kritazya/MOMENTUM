@@ -21,3 +21,8 @@ export function getUserProfile(token) {
 export function getUserWorkout() {
   return apiRequest("/api/workoutsessions/todayssession");
 }
+
+// Get user current workout Session
+export function getProgressInsight() {
+  return apiRequest("/api/progressInsight");
+}
