@@ -173,14 +173,6 @@ export default function TodaysWorkoutCard() {
         <div className="mt-8">
           <WorkoutExerciseList exercises={exercises} />
         </div>
-
-        <button
-          type="button"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm text-momentum-muted transition-colors hover:text-white"
-        >
-          View full details &amp; muscle breakdown
-          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
       </div>
     </CardShell>
   );
