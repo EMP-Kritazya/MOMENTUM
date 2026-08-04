@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.js";
 import userRouter from "./routes/users.js";
+import progressRouter from "./routes/progressInsight.js";
 import { connectDB } from "./config/database.js";
 import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
@@ -35,6 +36,7 @@ app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
 app.use("/api/groups", groupRouter);
+app.use("/api/progressInsight", authenticateToken, progressRouter);
 
 app.get("/", (req, res) => {
   res
