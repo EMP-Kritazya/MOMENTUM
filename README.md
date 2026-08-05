@@ -5,7 +5,7 @@ CodePath WEB103 Final Project
 Designed and developed by Kritazya Upreti, Johan Almanzar, Ngoc (Vy) Pham,
 and Joy Tran.
 
-- Deployed site: https://momentum-z1ob.onrender.com/
+- Deployed site: https://momentum-av8u.onrender.com
 
 # About
 
