@@ -1,26 +1,8 @@
+import { useEffect, useState } from "react";
 import { CheckCircle2, Clock } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import StatItem from "./StatItem";
-
-export const weeklyProgress = {
-  title: "This Week's Progress",
-  subtitle: "Last 8 weeks",
-  // Relative bar heights (0–1) for the mini chart.
-  bars: [
-    { label: "W1", value: 0.45 },
-    { label: "W2", value: 0.5 },
-    { label: "W3", value: 0.4 },
-    { label: "W4", value: 0.72 },
-    { label: "W5", value: 0.6 },
-    { label: "W6", value: 0.68 },
-    { label: "W7", value: 0.85 },
-    { label: "W8", value: 0.7 },
-  ],
-  workoutsCompleted: 4,
-  workoutsGoal: 5,
-  activeMinutes: 185,
-  weeklyGoalPercent: 80,
-};
+import { getActivitySummary } from "../../api/usersApi";
 
 function MiniBarChart({ bars }) {
   return (
@@ -45,22 +27,68 @@ function MiniBarChart({ bars }) {
   );
 }
 
-export default function WeeklyProgressCard({ progress }) {
+export default function WeeklyProgressCard() {
+  const [weekly, setWeekly] = useState(null);
+  const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    getActivitySummary()
+      .then((data) => {
+        if (!active) return;
+        setWeekly(data.weekly);
+        setStatus("ready");
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.message);
+        setStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (status === "loading") {
+    return (
+      <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
+        <div className="h-5 w-48 animate-pulse rounded bg-white/10" />
+        <div className="mt-8 h-24 animate-pulse rounded-2xl bg-white/5" />
+      </section>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
+        <h3 className="text-lg font-semibold text-white">
+          This Week&apos;s Progress
+        </h3>
+        <p className="mt-3 text-sm text-red-400">
+          Couldn&apos;t load progress: {error}
+        </p>
+      </section>
+    );
+  }
+
   const {
-    title,
-    subtitle,
     bars,
     workoutsCompleted,
     workoutsGoal,
     activeMinutes,
     weeklyGoalPercent,
-  } = weeklyProgress;
+  } = weekly;
 
   return (
     <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
       <div>
-        <h3 className="text-lg font-semibold text-white">{title}</h3>
-        <p className="text-sm text-momentum-muted">{subtitle}</p>
+        <h3 className="text-lg font-semibold text-white">
+          This Week&apos;s Progress
+        </h3>
+        <p className="text-sm text-momentum-muted">Last 8 weeks</p>
       </div>
 
       <div className="mt-6 mb-4">

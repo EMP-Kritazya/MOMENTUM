@@ -78,7 +78,7 @@ Authenticated members can create a group, receive an invite code, join another
 group, see member streak and daily-completion information, and leave a group.
 Group administrators can update or delete only groups they administer.
 
-<!-- TODO: Replace this comment with the uploaded Accountability Groups GIF. -->
+<img src='./milestones/gifs/AccountabilityGroup.gif' title='Video Walkthrough' alt='Video Walkthrough' />
 
 ### ✅ Exercise Library
 

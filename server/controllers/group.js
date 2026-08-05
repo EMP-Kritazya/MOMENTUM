@@ -153,7 +153,9 @@ export async function createGroup(req, res) {
   } catch (error) {
     await client.query("ROLLBACK");
     if (error.code === "23505") {
-      return res.status(409).json({ message: "Please try creating the group again" });
+      return res
+        .status(409)
+        .json({ message: "Please try creating the group again" });
     }
     console.error("Unable to create group:", error);
     return res.status(500).json({ message: "Unable to create group" });
@@ -184,7 +186,9 @@ export async function joinGroupByInviteCode(req, res) {
     return res.status(201).json(result.rows[0]);
   } catch (error) {
     if (error.code === "23505") {
-      return res.status(409).json({ message: "You are already a member of this group" });
+      return res
+        .status(409)
+        .json({ message: "You are already a member of this group" });
     }
     console.error("Unable to join group:", error);
     return res.status(500).json({ message: "Unable to join group" });
@@ -242,7 +246,9 @@ export async function deleteGroup(req, res) {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Group not found" });
     }
-    return res.status(200).json({ message: "Group deleted", group: result.rows[0] });
+    return res
+      .status(200)
+      .json({ message: "Group deleted", group: result.rows[0] });
   } catch (error) {
     console.error("Unable to delete group:", error);
     return res.status(500).json({ message: "Unable to delete group" });
@@ -264,9 +270,13 @@ export async function leaveGroup(req, res) {
       [groupId, req.auth.userId],
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "You are not a member of this group" });
+      return res
+        .status(404)
+        .json({ message: "You are not a member of this group" });
     }
-    return res.status(200).json({ message: "Left group", membership: result.rows[0] });
+    return res
+      .status(200)
+      .json({ message: "Left group", membership: result.rows[0] });
   } catch (error) {
     console.error("Unable to leave group:", error);
     return res.status(500).json({ message: "Unable to leave group" });
