@@ -10,6 +10,7 @@ import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
 import groupRouter from "./routes/groups.js";
+import { authenticateToken } from "./middleware/authenticateToken.js";
 
 // create express app
 const app = express();
