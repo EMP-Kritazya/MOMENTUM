@@ -92,7 +92,7 @@ export async function getMe(req, res) {
 
   try {
     const result = await pool.query(
-      `SELECT user_id, username, first_name, last_name, email, role, current_streak
+      `SELECT user_id, username, first_name, last_name, email, role, current_streak, weekly_commitment
        FROM users
        WHERE user_id = $1
        LIMIT 1`,

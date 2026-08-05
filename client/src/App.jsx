@@ -8,6 +8,7 @@ import OnboardingPage from "./pages/OnboardingPage";
 import History from "./pages/History";
 import WorkoutGroups from "./pages/WorkoutGroups";
 import LoginPage from "./pages/LoginPage";
+import ActiveWorkout from "./pages/ActiveWorkout";
 
 export default function App() {
   return (
@@ -16,6 +17,9 @@ export default function App() {
       <Route path="/" element={<OnboardingPage />} />
       <Route path="/admin/login" element={<AdminLoginPage />}></Route>
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Full-screen focused workout runner (no sidebar). */}
+      <Route path="/workout/active" element={<ActiveWorkout />} />
 
       {/* Everything else shares the sidebar layout */}
       <Route element={<AppLayout />}>

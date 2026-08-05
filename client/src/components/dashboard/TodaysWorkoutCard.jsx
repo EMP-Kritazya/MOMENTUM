@@ -1,8 +1,10 @@
 import { ArrowRight, Clock, Zap, Target } from "lucide-react";
 import WorkoutExerciseList from "./WorkoutExerciseList";
 import { getUserWorkout } from "../../api/usersApi";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { CardShell } from "./CardShell";
+import { updateSession } from "../../api/usersApi";
 
 function MetaStat({ icon: Icon, children }) {
   return (
@@ -21,16 +23,18 @@ function titleCase(value) {
     .join(" ");
 }
 
-// Maps the /todayssession API response ({ session, title, exercises }) into the
-// shape this card renders.
-function toTodayWorkout({ session, title, exercises }) {
+export function toTodayWorkout({
+  started,
+  completed,
+  session,
+  title,
+  exercises,
+}) {
   const list = exercises ?? [];
 
-  // Generated titles look like "Beginner Upper Body" -> difficulty + name.
   const [difficulty = "", ...rest] = (title ?? "").trim().split(" ");
   const name = rest.join(" ") || "Today's Workout";
 
-  // Duration/calories aren't tracked before a workout, so estimate from volume.
   const totalSets = list.reduce(
     (sum, exercise) => sum + (exercise.sets ?? 0),
     0,
@@ -50,19 +54,35 @@ function toTodayWorkout({ session, title, exercises }) {
     durationMin,
     calories,
     targetMuscles,
+    started,
+    completed,
     exercises: list.map((exercise) => ({
-      id: exercise.exercise_id,
+      templateExerciseId: exercise.template_exercise_id,
+      exerciseId: exercise.exercise_id,
       name: exercise.exercise_name,
+      target_muscle: exercise.target_muscle,
+      sets: exercise.sets,
+      reps: exercise.reps,
+      completed: exercise.completed ?? false,
       scheme: `${exercise.sets} × ${exercise.reps}`,
     })),
   };
 }
 
 // Generated WorkoutPlan Card Component
-export default function TodaysWorkoutCard() {
+export function TodaysWorkoutCard() {
+  const navigate = useNavigate();
   const [workout, setWorkout] = useState(null);
   const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
   const [error, setError] = useState("");
+
+  const handleUpdateSession = useCallback(async (started, completed) => {
+    const payload = {
+      started: started,
+      completed: completed,
+    };
+    await updateSession(payload);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -85,10 +105,6 @@ export default function TodaysWorkoutCard() {
       active = false;
     };
   }, []);
-
-  function handleStart() {
-    // TODO: maybe just change the button to finish session, so tables can update
-  }
 
   if (status === "loading") {
     return (
@@ -120,15 +136,26 @@ export default function TodaysWorkoutCard() {
     );
   }
 
-  const {
+  let {
     label,
     title,
     difficulty,
     durationMin,
     calories,
     targetMuscles,
+    started,
+    completed,
     exercises,
   } = workout;
+
+  async function handleStart() {
+    if (!started) {
+      started = true;
+    }
+
+    await handleUpdateSession(started, completed);
+    navigate("/workout/active");
+  }
 
   return (
     <CardShell>
@@ -162,10 +189,21 @@ export default function TodaysWorkoutCard() {
 
           <button
             type="button"
-            // onClick={onStart}
-            className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-momentum-lime px-8 py-2.5 mt-7 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime focus-visible:ring-offset-2 focus-visible:ring-offset-momentum-panel cursor-pointer"
+            onClick={handleStart}
+            disabled={completed}
+            title={
+              completed
+                ? "You've already finished today's workout — come back tomorrow"
+                : undefined
+            }
+            className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-momentum-lime px-8 py-2.5 mt-7 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime focus-visible:ring-offset-2 focus-visible:ring-offset-momentum-panel cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-momentum-lime"
           >
-            Start Workout
+            {completed
+              ? "Get Next Workout"
+              : started
+                ? "Continue Workout"
+                : "Start Workout"}
+
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
