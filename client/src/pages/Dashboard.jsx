@@ -1,5 +1,5 @@
 import DashboardHeader from "../components/dashboard/DashboardHeader";
-import TodaysWorkoutCard from "../components/dashboard/TodaysWorkoutCard";
+import { TodaysWorkoutCard } from "../components/dashboard/TodaysWorkoutCard";
 import ProgressInsightCard from "../components/dashboard/ProgressInsightCard";
 import MonthlyActivityCard from "../components/dashboard/MonthlyActivityCard";
 import WeeklyProgressCard from "../components/dashboard/WeeklyProgressCard";

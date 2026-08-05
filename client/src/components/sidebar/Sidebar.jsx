@@ -94,7 +94,8 @@ export default function Sidebar() {
             <div className="overflow-hidden">
               <div className="text-sm font-medium truncate">{displayName}</div>
               <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <Flame size={11} className="text-primary" /> 12 day streak
+                <Flame size={11} className="text-primary" />
+                {user?.current_streak ?? 0} day streak
               </div>
             </div>
           </div>
