@@ -3,6 +3,7 @@ import { authenticateToken } from "../middleware/authenticateToken.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import {
   getAllExercises,
+  getAllExercisesAdmin,
   getIndividualExercise,
   createExercise,
   updateExercise,
@@ -11,6 +12,12 @@ import {
 
 const router = Router();
 
+router.get(
+  "/admin/all",
+  authenticateToken,
+  requireAdmin,
+  getAllExercisesAdmin,
+);
 router.get("/", getAllExercises);
 router.get("/:id", getIndividualExercise);
 router.post("/", authenticateToken, requireAdmin, createExercise);

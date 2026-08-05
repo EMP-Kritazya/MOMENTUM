@@ -9,6 +9,8 @@ import History from "./pages/History";
 import WorkoutGroups from "./pages/WorkoutGroups";
 import LoginPage from "./pages/LoginPage";
 import ActiveWorkout from "./pages/ActiveWorkout";
+import AdminTemplatesPage from "./pages/AdminTemplatesPage";
+import RequireAdminRoute from "./components/auth/RequireAdminRoute";
 
 export default function App() {
   return (
@@ -27,6 +29,12 @@ export default function App() {
         <Route path="/history" element={<History />} />
         <Route path="/library" element={<ExerciseLibrary />} />
         <Route path="/groups" element={<WorkoutGroups />} />
+        <Route element={<RequireAdminRoute />}>
+          <Route
+            path="/admin/templates"
+            element={<AdminTemplatesPage />}
+          />
+        </Route>
       </Route>
 
       {/* Unknown URL returns to onboarding. */}

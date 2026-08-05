@@ -62,18 +62,6 @@ const GOAL_SCHEME = {
 
 const DEFAULT_SCHEME = { sets: 3, reps: 10 };
 
-const DIFFICULTY_LABEL = {
-  beginner: "Beginner",
-  some_experience: "Beginner",
-  intermediate: "Intermediate",
-  advanced: "Advance",
-};
-const SPLIT_LABEL = {
-  upper: "Upper Body",
-  lower: "Lower Body",
-  full: "Full Body",
-};
-
 function classifySplit(muscles) {
   const hasUpper = muscles.some((m) => UPPER_MUSCLES.has(m));
   const hasLower = muscles.some((m) => LOWER_MUSCLES.has(m));
@@ -108,11 +96,6 @@ function mapUserEquipment(raw) {
   return [...allowed];
 }
 
-function buildTitle(experienceLevel, split) {
-  const level = DIFFICULTY_LABEL[experienceLevel] ?? "Beginner";
-  return `${level} ${SPLIT_LABEL[split]}`;
-}
-
 function shuffle(list) {
   const copy = [...list];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -132,8 +115,9 @@ async function queryCandidates(
 ) {
   const result = await client.query(
     `SELECT exercise_id, exercise_name, target_muscle, difficulty
-       FROM exercises
-      WHERE target_muscle = ANY($1)
+      FROM exercises
+      WHERE is_active = TRUE
+        AND target_muscle = ANY($1)
         AND equipment_needed = ANY($2)
         AND difficulty = ANY($3)
         AND ($4::int[] = '{}' OR exercise_id <> ALL($4))`,
@@ -217,13 +201,32 @@ async function createTemplateExercises(lastSessionId, userId, today) {
     const { experience_level, fitness_goal, equipment_available } =
       context.rows[0];
 
-    difficulties = EXPERIENCE_DIFFICULTY[experience_level] ?? ["beginner"];
-    const template_name = buildTitle(experience_level, split);
-    const response = await client.query(
-      `SELECT template_id FROM workouttemplates where title = $1`,
-      [template_name],
+    // Seeded administrators do not complete onboarding, so their fitness
+    // preferences may be null. Use the beginner configuration as a safe
+    // generator fallback while preserving every supported member selection.
+    const effectiveExperienceLevel = Object.hasOwn(
+      EXPERIENCE_DIFFICULTY,
+      experience_level,
+    )
+      ? experience_level
+      : "beginner";
+
+    difficulties = EXPERIENCE_DIFFICULTY[effectiveExperienceLevel];
+    const templateResult = await client.query(
+      `SELECT template_id
+         FROM workouttemplates
+        WHERE experience_level = $1
+          AND workout_split = $2
+          AND is_active = TRUE
+        LIMIT 1`,
+      [effectiveExperienceLevel, split],
     );
-    const templateId = response.rows[0].template_id;
+    if (templateResult.rows.length === 0) {
+      throw new Error(
+        `No active ${effectiveExperienceLevel} ${split} workout template is available`,
+      );
+    }
+    const templateId = templateResult.rows[0].template_id;
 
     // Translate preferences into exercise-table filters.
     const equipment = mapUserEquipment(equipment_available);

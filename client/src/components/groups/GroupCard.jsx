@@ -1,7 +1,14 @@
-import { MoreHorizontal, Users } from "lucide-react";
+import { LogOut, Pencil, Trash2, Users } from "lucide-react";
 import GroupMemberRow from "./GroupMemberRow.jsx";
 
-export default function GroupCard({ group, currentUserId, onLeave }) {
+export default function GroupCard({
+  group,
+  currentUserId,
+  onEdit,
+  onDelete,
+  onLeave,
+  isDeleting,
+}) {
   const completedCount = group.members.filter(
     (member) => member.daily_status === "done",
   ).length;
@@ -43,14 +50,38 @@ export default function GroupCard({ group, currentUserId, onLeave }) {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => onLeave(group.group_id)}
-          aria-label={`Leave ${group.group_name}`}
-          className="rounded-lg p-2 text-momentum-muted hover:bg-white/5 hover:text-white"
-        >
-          <MoreHorizontal size={18} aria-hidden="true" />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {group.current_user_is_creator ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onEdit(group)}
+                aria-label={`Edit ${group.group_name}`}
+                className="rounded-lg border border-momentum-border p-2 text-momentum-muted hover:bg-white/5 hover:text-white"
+              >
+                <Pencil size={16} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(group)}
+                disabled={isDeleting}
+                aria-label={`Delete ${group.group_name}`}
+                className="rounded-lg border border-red-500/30 p-2 text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                <Trash2 size={16} aria-hidden="true" />
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onLeave(group.group_id)}
+              aria-label={`Leave ${group.group_name}`}
+              className="rounded-lg border border-momentum-border p-2 text-momentum-muted hover:bg-white/5 hover:text-white"
+            >
+              <LogOut size={16} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </header>
 
       <ul className="mt-5 grid gap-2 sm:grid-cols-2">

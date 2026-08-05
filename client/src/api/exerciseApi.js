@@ -5,6 +5,13 @@ export function getExercises() {
   return apiRequest("/api/exercises");
 }
 
+export function getAdminExercises({ includeInactive = true } = {}) {
+  const params = new URLSearchParams({
+    include_inactive: String(includeInactive),
+  });
+  return adminApiRequest(`/api/exercises/admin/all?${params}`);
+}
+
 // Admin-only request
 export function createExercise(payload) {
   return adminApiRequest("/api/exercises", {

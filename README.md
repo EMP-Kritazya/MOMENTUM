@@ -5,7 +5,7 @@ CodePath WEB103 Final Project
 Designed and developed by Kritazya Upreti, Johan Almanzar, Ngoc (Vy) Pham,
 and Joy Tran.
 
-- Deployed site: https://momentum-z1ob.onrender.com/
+- Deployed site: https://momentum-av8u.onrender.com
 
 Momentum is a full-stack fitness consistency platform designed to help
 beginners and casual gym-goers build sustainable workout habits. It combines
@@ -255,4 +255,4 @@ VITE_API_URL=https://momentum-bxgh.onrender.com
 
 ## Final walkthrough
 
-https://www.loom.com/share/d0b4bcf7e0a140a08fa024e510270d64
+https://www.loom.com/share/afab2e6ad9744cc896aa283a8c1d3f4c
