@@ -31,10 +31,17 @@ export default function JoinGroupForm({ onJoin, isSubmitting }) {
         </label>
         <input
           id="invite-code"
+          name="inviteCode"
+          type="text"
           value={inviteCode}
-          onChange={(event) => setInviteCode(event.target.value)}
+          onChange={(event) =>
+            setInviteCode(event.target.value.toUpperCase())
+          }
           placeholder="Invite code..."
           maxLength={12}
+          autoCapitalize="characters"
+          autoComplete="off"
+          spellCheck={false}
           className="min-h-11 flex-1 rounded-xl border border-momentum-border bg-momentum-panel px-4 text-white outline-none focus:ring-2 focus:ring-momentum-lime"
         />
         <button

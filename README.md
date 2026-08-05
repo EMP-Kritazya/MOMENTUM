@@ -58,13 +58,13 @@ https://github.com/user-attachments/assets/5eeecaef-6076-4e73-8bdc-24f106df94a4
 
 Each day, users receive a personalized workout generated from the exercise database using their preferences and workout history. The app removes the need to manually plan workouts, helping users stay focused on consistency rather than deciding what to do.
 
-<!-- TODO: Replace this comment with the uploaded Accountability Groups GIF. -->
+<img width="1389" height="673" alt="generator" src="./milestones/gifs/workout_generator.png" />
 
 ### ✅ Workout Progress Dashboard
 
 The home dashboard displays workout streaks, weekly progress, completed workouts, achievement milestones, and personalized motivational messages based on each user's fitness journey.
 
-<!-- TODO: Replace this comment with the uploaded Accountability Groups GIF. -->
+<img width="1389" height="673" alt="progress" src="./milestones/gifs/progress.png" />
 
 ### ✅ Workout History Management
 
@@ -78,23 +78,23 @@ Authenticated members can create a group, receive an invite code, join another
 group, see member streak and daily-completion information, and leave a group.
 Group administrators can update or delete only groups they administer.
 
-<!-- TODO: Replace this comment with the uploaded Accountability Groups GIF. -->
+<img src='./milestones/gifs/AccountabilityGroup.gif' title='Video Walkthrough' alt='Video Walkthrough' />
 
 ### ✅ Exercise Library
 
-Users can browse a searchable exercise database containing exercise descriptions, target muscle groups, difficulty levels, and equipment requirements.
+Users can loads exercises from the server, supports search, muscle filtering It also displays equipment and difficulty.
 
-<img src='./milestones/gifs/ExerciseLibraryDemo.gif' title='Video Walkthrough' alt='Video Walkthrough' />
+<img src='./milestones/gifs/ExerciseLibraryDemo.gif' title='library' alt='Video Walkthrough' />
 
-### ✅ Administrator authentication and authorization
+### ✅ Administrator authentication and authorization (Stretch feature)
 
 Administrators can log in with server-validated credentials. Protected
 exercise mutations require both a valid authentication cookie and the
 administrator role.
 
-<!-- TODO: Replace this comment with the uploaded administrator GIF. -->
+<img src='./milestones/gifs/admin.gif' title='Video Walkthrough' alt='admin' />
 
-### ✅ Workout-history filtering and detail modal
+### ✅ Workout-history filtering and detail modal (Custom Feature)
 
 The workout-history interface supports status and muscle filters, date sorting,
 pagination, responsive table/card views, error states, and a same-page workout
@@ -104,58 +104,38 @@ detail modal.
 
 ---
 
-## Exercise Library
+### ✅ Exercise Library
 
 Users can browse a searchable exercise database containing exercise descriptions, target muscle groups, difficulty levels, and equipment requirements.
 
 <img src='./milestones/gifs/ExerciseLibraryDemo.gif' title='Video Walkthrough' alt='Video Walkthrough' />
 
----
 
-## Workout Detail Modal (Custom Feature)
-
-Clicking on any workout opens a slide-out panel or modal displaying the complete workout plan, including exercises, recommended sets, repetitions, estimated duration, and targeted muscle groups without navigating away from the dashboard.
-
-[gif goes here]
 
 ---
 
-## Workout Filtering & Sorting (Custom Feature)
+### ✅Workout Filtering & Sorting (Custom Feature)
 
 Users can filter workouts by duration, muscle group, equipment, or difficulty and sort workouts based on recency or completion status.
 
-[gif goes here]
+<img src='./milestones/gifs/filter.png' title='filter' alt='filter and sort' />
 
----
-
-## Automatic Starter Plan Generation (Custom Feature)
-
-Immediately after account creation, Momentum automatically generates a personalized Week 1 workout plan using the information collected during onboarding.
-
-[gif goes here]
-
----
-
-## Input Validation (Custom Feature)
-
-All workout plans, workout logs, and onboarding responses are validated before being saved to the database. Invalid or incomplete submissions display clear feedback without modifying stored data.
-
-[gif goes here]
 
 ---
 
 # Stretch Features
 
-- User authentication using JWT or session-based login
-- Protected routes for authenticated users
-- Loading spinners while workout plans and dashboard data are being generated
-- Disable buttons during form submissions to prevent duplicate requests
-- Toast notifications confirming successful actions (workout completed, profile updated, workout generated, etc.)
-- Upload progress photos to cloud storage
-- Personalized monthly "Momentum Recap" summarizing workout statistics, streaks, achievements, and progress
-- Adaptive workout recommendations that reduce workout intensity after extended inactivity and gradually increase difficulty as consistency improves
-- Achievement badges for consistency milestones (7-day streak, First Month, 50 Workouts, Never Miss a Monday, etc.)
-- Smart motivational messages generated based on each user's recent progress and workout history
+- ✅ User authentication using JWT
+    - Authentication uses signed JWTs stored in httpOnly cookies.
+    - Member login, onboarding authentication, admin login, logout, and current-user lookup exist.
+
+- ✅ Loading indicators
+    - Dashboard cards use loading skeletons.
+    - Exercise Library uses a loading spinner.
+    - History, groups, authentication, and workout pages show loading states.
+
+- ✅ Disable buttons during form submissions
+    - Onboarding, login, admin login, group creation, and group joining prevent duplicate submissions.
 
 ---
 
@@ -253,7 +233,7 @@ npm run dev
 ```text
 Root Directory: server
 Build Command: npm install
-Start Command: npm start
+Start Command: npm run reset & npm run start
 Health Check: /api/health
 ```
 
@@ -265,16 +245,11 @@ running the reset command intentionally.
 
 ```text
 Root Directory: client
-Build Command: npm install && npm run build
+Build Command: npm install && npm run dev
 Publish Directory: dist
 VITE_API_URL=https://momentum-bxgh.onrender.com
 ```
 
-React Router rewrite:
-
-```text
-/*  ->  /index.html  (Rewrite)
-```
 
 ## Final walkthrough
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { getWorkoutTemplateDetails } from "../../api/workoutHistory";
+import { getWorkoutSessionDetails } from "../../api/workoutHistory";
 
 export default function WorkoutHistoryModal({ workout, onClose }) {
   const [details, setDetails] = useState(null);
@@ -10,8 +10,10 @@ export default function WorkoutHistoryModal({ workout, onClose }) {
     if (!workout) return undefined;
 
     const controller = new AbortController();
+    setDetails(null);
+    setError("");
 
-    getWorkoutTemplateDetails(workout.template_id, controller.signal)
+    getWorkoutSessionDetails(workout.session_id, controller.signal)
       .then(setDetails)
       .catch((requestError) => {
         if (requestError.name !== "AbortError") {

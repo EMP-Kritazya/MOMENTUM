@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CardShell } from "../components/dashboard/CardShell";
 import { useNavigate } from "react-router-dom";
-import { toTodayWorkout } from "../components/dashboard/TodaysWorkoutCard";
+import { toTodayWorkout } from "../utils/toTodayWorkout";
 import { getUserWorkout, updateExerciseCompletion } from "../api/usersApi";
 import { CurrentExerciseCard } from "../components/activeWorkout/CurrentExerciseCard";
 import { CurrentExerciseHeader } from "../components/activeWorkout/CurrentExerciseHeader";
@@ -151,12 +151,7 @@ export default function ActiveWorkout() {
   }
 
   const {
-    label,
     title,
-    difficulty,
-    durationMin,
-    calories,
-    targetMuscles,
     started,
     completed,
   } = workout;

@@ -1,6 +1,6 @@
 import { Users, Flame } from "lucide-react";
 
-export const groupProgress = {
+const groupProgress = {
   name: "Morning Warriors",
   completedToday: 5,
   totalMembers: 6,

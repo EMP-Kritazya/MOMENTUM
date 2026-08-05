@@ -132,7 +132,9 @@ export default function ExerciseLibrary() {
       ) : error ? (
         <div className="text-center py-20 text-muted-foreground">
           <AlertCircle size={32} className="mx-auto mb-3 text-red-400" />
-          <p className="font-medium text-red-400">Couldn't load exercises</p>
+          <p className="font-medium text-red-400">
+            Couldn&apos;t load exercises
+          </p>
           <p className="text-sm mt-1 opacity-60">{error}</p>
         </div>
       ) : items.length > 0 ? (

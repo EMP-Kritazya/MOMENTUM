@@ -1,5 +1,4 @@
-import React from "react";
-import { Check, Clock, Target } from "lucide-react";
+import { Clock, Target } from "lucide-react";
 import { PerSet } from "./PerSet";
 
 export function CurrentExerciseCard({
