@@ -19,11 +19,7 @@ function OnboardingNavigation({
       ].join(" ")}
     >
       {!isFirstStep && (
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onBack}
-        >
+        <Button type="button" variant="secondary" onClick={onBack}>
           Back
         </Button>
       )}

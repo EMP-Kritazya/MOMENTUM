@@ -30,9 +30,7 @@ function QuestionStep({ question, stepNumber, value, onSelect }) {
             name={question.id}
             multiple={isMultiple}
             selected={
-              isMultiple
-                ? value.includes(option.value)
-                : value === option.value
+              isMultiple ? value.includes(option.value) : value === option.value
             }
             onChange={onSelect}
           />

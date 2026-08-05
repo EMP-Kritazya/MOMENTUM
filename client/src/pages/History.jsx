@@ -114,14 +114,19 @@ export default function History() {
       )}
 
       {user?.user_id && error && (
-        <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-red-300" role="alert">
+        <div
+          className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-red-300"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       {user?.user_id && !loading && !error && workouts.length === 0 && (
         <div className="mt-8 rounded-2xl border border-momentum-border bg-momentum-panel p-8 text-center">
-          <h2 className="font-display text-2xl text-white">No workouts found</h2>
+          <h2 className="font-display text-2xl text-white">
+            No workouts found
+          </h2>
           <p className="mt-2 text-momentum-muted">
             Try another filter or complete your first workout.
           </p>
@@ -130,7 +135,10 @@ export default function History() {
 
       {user?.user_id && !loading && !error && workouts.length > 0 && (
         <div className="mt-5">
-          <HistoryTable workouts={workouts} onOpenWorkout={setSelectedWorkout} />
+          <HistoryTable
+            workouts={workouts}
+            onOpenWorkout={setSelectedWorkout}
+          />
 
           <div className="space-y-3 md:hidden">
             {workouts.map((workout) => (

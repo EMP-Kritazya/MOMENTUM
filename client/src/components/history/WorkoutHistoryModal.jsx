@@ -54,7 +54,10 @@ export default function WorkoutHistoryModal({ workout, onClose }) {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-momentum-lime">
               Workout details
             </p>
-            <h2 id="history-modal-heading" className="mt-2 font-display text-3xl text-white">
+            <h2
+              id="history-modal-heading"
+              className="mt-2 font-display text-3xl text-white"
+            >
               {workout.title}
             </h2>
           </div>
@@ -82,7 +85,9 @@ export default function WorkoutHistoryModal({ workout, onClose }) {
                 className="flex items-center justify-between gap-4 rounded-xl border border-momentum-border bg-momentum-bg p-4"
               >
                 <div>
-                  <p className="font-semibold text-white">{exercise.exercise_name}</p>
+                  <p className="font-semibold text-white">
+                    {exercise.exercise_name}
+                  </p>
                   <p className="mt-1 text-sm text-momentum-muted">
                     {exercise.target_muscle}
                   </p>

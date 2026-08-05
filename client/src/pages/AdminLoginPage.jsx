@@ -11,91 +11,91 @@ import Button from "../components/ui/Button";
 import TextInput from "../components/ui/TextInput";
 
 function AdminLoginPage() {
-    const initialValues = {
-        email: "",
-        password: "",
+  const initialValues = {
+    email: "",
+    password: "",
+  };
+
+  const initialErrors = {
+    email: "",
+    password: "",
+  };
+  const nav = useNavigate();
+  const { refresh } = useAuth();
+
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState(initialErrors);
+  const [serverError, setServerError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function handleChange(event) {
+    const { name, value } = event.target;
+    setValues((current) => ({
+      ...current,
+      [name]: value,
+    }));
+
+    setErrors((current) => ({
+      ...current,
+      [name]: "",
+    }));
+
+    setServerError("");
+  }
+
+  function validateLogin(values) {
+    const nextErrors = {
+      email: "",
+      password: "",
     };
 
-    const initialErrors = {
-        email: "",
-        password: "",
-    }
-    const nav = useNavigate();
-    const { refresh } = useAuth();
-
-    const [values, setValues] = useState(initialValues)
-    const [errors, setErrors] = useState(initialErrors)
-    const [serverError, setServerError] = useState("")
-    const [isSubmitting, setIsSubmitting] = useState(false)
-
-    function handleChange(event) {
-        const { name, value } = event.target
-        setValues(current => ({
-            ...current,
-            [name]: value,
-        }))
-
-        setErrors(current => ({
-            ...current,
-            [name]: "",
-        }))
-
-        setServerError("")
+    if (!values.email.trim()) {
+      nextErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
+      nextErrors.email = "Enter a valid email adrress.";
     }
 
-    function validateLogin(values) {
-        const nextErrors = {
-            email: "",
-            password: "",
-        }
-
-        if (!values.email.trim()) {
-            nextErrors.email = "Email is required."
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-            nextErrors.email = "Enter a valid email adrress."
-        }
-
-        if (!values.password) {
-            nextErrors.password = "Password is required.";
-        }
-        return nextErrors;
+    if (!values.password) {
+      nextErrors.password = "Password is required.";
     }
+    return nextErrors;
+  }
 
-    function hasErrors(errors) {
-        return Object.values(errors).some(Boolean)
-    }
+  function hasErrors(errors) {
+    return Object.values(errors).some(Boolean);
+  }
 
-    async function handleSubmit(event) {
-      event.preventDefault();
+  async function handleSubmit(event) {
+    event.preventDefault();
 
-      const nextErrors = validateLogin(values);
-      setErrors(nextErrors);
+    const nextErrors = validateLogin(values);
+    setErrors(nextErrors);
 
-      if (hasErrors(nextErrors)) return;
-      if (isSubmitting) return
-      setIsSubmitting(true);
-      setServerError("");
+    if (hasErrors(nextErrors)) return;
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setServerError("");
 
-      try {
-        const result = await loginAdmin({
-          email: values.email,
-          password: values.password,
-        });
+    try {
+      const result = await loginAdmin({
+        email: values.email,
+        password: values.password,
+      });
 
-        if (result.user?.role !== "admin") {
-          throw new Error("Administrator access required.");
-        }
-
-        // The server set an httpOnly authToken cookie; nothing to persist in JS.
-        // Refresh shared auth state so the sidebar reflects the session now.
-        await refresh();
-        nav("/dashboard");
-      } catch (error) {
-        setServerError(error.message);
-      } finally {
-        setIsSubmitting(false);
+      if (result.user?.role !== "admin") {
+        throw new Error("Administrator access required.");
       }
+
+      // The server set an httpOnly authToken cookie; nothing to persist in JS.
+      // Refresh shared auth state so the sidebar reflects the session now.
+      await refresh();
+      nav("/dashboard");
+    } catch (error) {
+      setServerError(error.message);
+    } finally {
+      setIsSubmitting(false);
     }
+  }
 
   return (
     <main className="min-h-screen bg-momentum-bg">
@@ -144,11 +144,7 @@ function AdminLoginPage() {
                 </p>
               )}
 
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full"
-              >
+              <Button type="submit" disabled={isSubmitting} className="w-full">
                 {isSubmitting ? "Signing in..." : "Sign in as Administrator"}
               </Button>
             </form>

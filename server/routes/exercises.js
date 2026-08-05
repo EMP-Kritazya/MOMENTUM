@@ -13,17 +13,8 @@ const router = Router();
 
 router.get("/", getAllExercises);
 router.get("/:id", getIndividualExercise);
-router.post("/", 
-  authenticateToken,
-  requireAdmin,
-  createExercise);
-router.patch("/:id", 
-  authenticateToken,
-  requireAdmin,
-  updateExercise);
-router.delete("/:id", 
-  authenticateToken,
-  requireAdmin,
-  deleteExercise);
+router.post("/", authenticateToken, requireAdmin, createExercise);
+router.patch("/:id", authenticateToken, requireAdmin, updateExercise);
+router.delete("/:id", authenticateToken, requireAdmin, deleteExercise);
 
 export default router;
