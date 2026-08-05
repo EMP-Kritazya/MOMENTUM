@@ -116,6 +116,7 @@ const createTables = async () => {
     template_id INT NOT NULL,
     date DATE NOT NULL,
     duration_minutes INT DEFAULT 0,
+    started BOOLEAN NOT NULL DEFAULT FALSE,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (user_id) 
       REFERENCES Users(user_id)
@@ -137,6 +138,7 @@ const createTables = async () => {
     sets INT NOT NULL,
     reps INT NOT NULL,
     exercise_order INT NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (session_id)
       REFERENCES WorkoutSessions(session_id)
       ON UPDATE CASCADE,
