@@ -7,11 +7,14 @@ and Joy Tran.
 
 - Deployed site: https://momentum-z1ob.onrender.com/
 
-# About
+Momentum is a full-stack fitness consistency platform designed to help
+beginners and casual gym-goers build sustainable workout habits. It combines
+guided onboarding, workout tracking, and small accountability groups so users
+can focus on consistency instead of planning every detail themselves.
 
-## Description and Purpose
+## Tech stack
 
-Momentum is a full-stack fitness consistency platform designed to help beginners and casual gym-goers build sustainable workout habits. Rather than overwhelming users with hundreds of exercise options, Momentum removes decision fatigue by generating personalized daily workout plans based on each user's goals, experience level, available equipment, and weekly schedule.
+### Frontend
 
 The app emphasizes long-term consistency over perfection. Users can track their progress through workout history, streaks, and personalized motivational insights while participating in small accountability groups that encourage members to stay committed without the distractions of a traditional social media platform.
 
@@ -56,13 +59,15 @@ https://github.com/user-attachments/assets/5eeecaef-6076-4e73-8bdc-24f106df94a4
 
 ### ✅ Daily Workout Generator
 
-Each day, users receive a personalized workout generated from the exercise database using their preferences and workout history. The app removes the need to manually plan workouts, helping users stay focused on consistency rather than deciding what to do.
+Authenticated members can create a group, receive an invite code, join another
+group, see member streak and daily-completion information, and leave a group.
+Group administrators can update or delete only groups they administer.
 
 <img width="1389" height="673" alt="generator" src="./milestones/gifs/workout_generator.png" />
 
 ### ✅ Workout Progress Dashboard
 
-The home dashboard displays workout streaks, weekly progress, completed workouts, achievement milestones, and personalized motivational messages based on each user's fitness journey.
+<!-- TODO: Replace this comment with the uploaded administrator GIF. -->
 
 <img width="1389" height="673" alt="progress" src="./milestones/gifs/progress.png" />
 
@@ -102,7 +107,7 @@ detail modal.
 
 <img width="1389" height="673" alt="history_demo" src="https://github.com/user-attachments/assets/5f8a7843-5921-4a74-9a8e-3efdcc4b92f2" />
 
----
+## Local installation
 
 ### ✅ Exercise Library
 
@@ -213,9 +218,6 @@ production database.
 
 4. Start the backend.
 
-```bash
-npm run dev
-```
 
 5. In another terminal, start the frontend.
 
