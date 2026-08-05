@@ -2,8 +2,7 @@ export const onboardingQuestions = [
   {
     id: "fitnessGoal",
     title: "What's your primary fitness goal?",
-    description:
-      "We'll tailor your workouts around what matters most to you.",
+    description: "We'll tailor your workouts around what matters most to you.",
     selectionType: "single",
     options: [
       { label: "Build Muscle", value: "build_muscle" },

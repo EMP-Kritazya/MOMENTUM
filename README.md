@@ -102,7 +102,6 @@ detail modal.
 
 <img width="1389" height="673" alt="history_demo" src="https://github.com/user-attachments/assets/5f8a7843-5921-4a74-9a8e-3efdcc4b92f2" />
 
-
 ---
 
 ## Exercise Library
@@ -161,6 +160,7 @@ All workout plans, workout logs, and onboarding responses are validated before b
 ---
 
 # Installation Instructions
+
 ## Features still in progress
 
 - Connecting the dashboard prototype to live API data
@@ -278,10 +278,4 @@ React Router rewrite:
 
 ## Final walkthrough
 
-
-
 https://www.loom.com/share/d0b4bcf7e0a140a08fa024e510270d64
-
-
-
-

@@ -6,7 +6,12 @@ const initialValues = {
   description: "",
 };
 
-export default function CreateGroupModal({ open, onClose, onCreate, isSubmitting }) {
+export default function CreateGroupModal({
+  open,
+  onClose,
+  onCreate,
+  isSubmitting,
+}) {
   const [values, setValues] = useState(initialValues);
 
   if (!open) return null;
@@ -36,7 +41,10 @@ export default function CreateGroupModal({ open, onClose, onCreate, isSubmitting
         className="w-full max-w-lg rounded-2xl border border-momentum-border bg-momentum-panel p-6"
       >
         <header className="flex items-center justify-between">
-          <h2 id="create-group-heading" className="font-display text-2xl text-white">
+          <h2
+            id="create-group-heading"
+            className="font-display text-2xl text-white"
+          >
             Create a new group
           </h2>
           <button
@@ -66,7 +74,9 @@ export default function CreateGroupModal({ open, onClose, onCreate, isSubmitting
           </label>
 
           <label className="block">
-            <span className="text-sm font-semibold text-white">Description</span>
+            <span className="text-sm font-semibold text-white">
+              Description
+            </span>
             <textarea
               value={values.description}
               onChange={(event) =>

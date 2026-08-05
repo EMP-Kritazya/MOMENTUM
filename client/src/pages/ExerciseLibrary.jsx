@@ -48,7 +48,10 @@ export default function ExerciseLibrary() {
   }, []);
 
   const muscleGroups = ["All", ...new Set(exercises.map((e) => e.muscle))];
-  const difficultyLevels = ["All", ...new Set(exercises.map((e) => e.difficulty))];
+  const difficultyLevels = [
+    "All",
+    ...new Set(exercises.map((e) => e.difficulty)),
+  ];
 
   const items = exercises.filter((e) => {
     const matchSearch =
@@ -62,7 +65,10 @@ export default function ExerciseLibrary() {
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold" style={{ fontFamily: "'Fraunces', serif" }}>
+        <h1
+          className="text-4xl font-bold"
+          style={{ fontFamily: "'Fraunces', serif" }}
+        >
           Exercise Library
         </h1>
         <p className="text-muted-foreground mt-1.5">
@@ -72,7 +78,10 @@ export default function ExerciseLibrary() {
 
       {/* Search */}
       <div className="relative mb-4">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          size={15}
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
         <input
           type="text"
           placeholder="Search exercises or muscle groups..."
@@ -142,8 +151,8 @@ export default function ExerciseLibrary() {
                     ex.difficulty === "Beginner"
                       ? "bg-green-500/10 text-green-400"
                       : ex.difficulty === "Intermediate"
-                      ? "bg-orange-500/10 text-orange-400"
-                      : "bg-red-500/10 text-red-400"
+                        ? "bg-orange-500/10 text-orange-400"
+                        : "bg-red-500/10 text-red-400"
                   }`}
                 >
                   {ex.difficulty}
@@ -167,7 +176,9 @@ export default function ExerciseLibrary() {
         <div className="text-center py-20 text-muted-foreground">
           <BookOpen size={36} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">No exercises match your filters.</p>
-          <p className="text-sm mt-1 opacity-60">Try adjusting the filters above.</p>
+          <p className="text-sm mt-1 opacity-60">
+            Try adjusting the filters above.
+          </p>
         </div>
       )}
     </div>

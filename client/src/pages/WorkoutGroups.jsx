@@ -21,33 +21,36 @@ export default function WorkoutGroups() {
   const [isJoining, setIsJoining] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const loadGroups = useCallback(async (signal) => {
-    if (!user?.user_id) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const groupRows = await getUserGroups(signal);
-      const groupsWithMembers = await Promise.all(
-        groupRows.map(async (group) => ({
-          ...group,
-          members: await getGroupMembers(group.group_id, signal),
-        })),
-      );
-
-      setGroups(groupsWithMembers);
-    } catch (requestError) {
-      if (requestError.name !== "AbortError") {
-        setError(requestError.message);
+  const loadGroups = useCallback(
+    async (signal) => {
+      if (!user?.user_id) {
+        setLoading(false);
+        return;
       }
-    } finally {
-      if (!signal?.aborted) setLoading(false);
-    }
-  }, [user?.user_id]);
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const groupRows = await getUserGroups(signal);
+        const groupsWithMembers = await Promise.all(
+          groupRows.map(async (group) => ({
+            ...group,
+            members: await getGroupMembers(group.group_id, signal),
+          })),
+        );
+
+        setGroups(groupsWithMembers);
+      } catch (requestError) {
+        if (requestError.name !== "AbortError") {
+          setError(requestError.message);
+        }
+      } finally {
+        if (!signal?.aborted) setLoading(false);
+      }
+    },
+    [user?.user_id],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -112,7 +115,9 @@ export default function WorkoutGroups() {
   if (!user) {
     return (
       <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
-        <h1 className="font-display text-4xl text-white">Accountability Groups</h1>
+        <h1 className="font-display text-4xl text-white">
+          Accountability Groups
+        </h1>
         <p className="mt-6 rounded-2xl border border-momentum-border bg-momentum-panel p-6 text-momentum-muted">
           Complete onboarding before joining accountability groups.
         </p>
