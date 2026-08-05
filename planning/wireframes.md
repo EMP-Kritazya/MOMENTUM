@@ -19,5 +19,3 @@
 ## Wireframe 4: Exercise Library 💪
 
 ![Exercise Library](./images/ExerciseLibrary.png)
-
-

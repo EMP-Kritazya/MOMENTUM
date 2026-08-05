@@ -26,7 +26,7 @@ This unit, be sure to complete all tasks listed below. To complete a task, place
   - [x] At least one of each required PostgreSQL relationship:
     - [x] One-to-many: `Users` to `WorkoutSessions`
     - [x] Many-to-many with a join table: `Users` to
-      `AccountabilityGroups` through `GroupMembers`
+          `AccountabilityGroups` through `GroupMembers`
   - [x] A RESTful API that supports GET, POST, PATCH, and DELETE
     - [x] Items can be viewed through GET endpoints
     - [x] Items can be created through POST endpoints
@@ -42,11 +42,11 @@ This unit, be sure to complete all tasks listed below. To complete a task, place
     - [x] The client separates pages, layouts, and reusable components
     - [x] Container pages compose presentation components
 - [x] The project includes parameterized dynamic routes in both frontend and
-  backend applications
+      backend applications
   - Backend parameterized routes are complete; the frontend currently uses
     static application routes.
 - [x] The project is deployed on Render with every claimed page working
-👉🏾👉🏾👉🏾 Check off each completed feature below.
+      👉🏾👉🏾👉🏾 Check off each completed feature below.
 
 - [x] The project includes an Express backend app and a React frontend app
 - [x] The project includes these backend-specific features:
@@ -93,11 +93,11 @@ This unit, be sure to complete all tasks listed below. To complete a task, place
 - [ ] Show a spinner while a page or page element is loading
 - [x] Disable buttons and inputs during the form submission process
 - [ ] Disable buttons after they have been clicked
-  - *At least 75% of buttons in your app must exhibit this behavior to receive full credit*
+  - _At least 75% of buttons in your app must exhibit this behavior to receive full credit_
 - [ ] Users can upload images to the app and have them be stored on a cloud service
-  - *A user profile picture does **NOT** count for this rubric item **only if** the app also includes "Login via GitHub" functionality.*
-  - *Adding a photo via a URL does **NOT** count for this rubric item (for example, if the user provides a URL with an image to attach it to the post).*
-  - *Selecting a photo from a list of provided photos does **NOT** count for this rubric item.*
+  - _A user profile picture does **NOT** count for this rubric item **only if** the app also includes "Login via GitHub" functionality._
+  - _Adding a photo via a URL does **NOT** count for this rubric item (for example, if the user provides a URL with an image to attach it to the post)._
+  - _Selecting a photo from a list of provided photos does **NOT** count for this rubric item._
 - [ ] 🍞 [Toast messages](https://www.patternfly.org/v3/pattern-library/communication/toast-notifications/index.html) deliver simple feedback in response to user events
 
 ## Final Demo GIF

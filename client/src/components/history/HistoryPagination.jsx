@@ -2,7 +2,10 @@ export default function HistoryPagination({ pagination, onPageChange }) {
   if (pagination.total_pages <= 1) return null;
 
   return (
-    <nav className="mt-5 flex items-center justify-between" aria-label="History pages">
+    <nav
+      className="mt-5 flex items-center justify-between"
+      aria-label="History pages"
+    >
       <button
         type="button"
         disabled={pagination.page === 1}

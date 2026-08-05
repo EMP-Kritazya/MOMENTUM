@@ -1,15 +1,5 @@
 import { pool } from "../config/database.js";
-import { createToken } from "./authController.js";
-
-const addCookie = (res, userId, role) => {
-  const token = createToken(userId, role);
-  res.cookie("authToken", token, {
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 15 * 60 * 1000,
-  });
-};
+import { createToken, setAuthCookie } from "./authController.js";
 
 // Allowed onboarding values shared with the frontend form.
 const FITNESS_GOALS = new Set([
@@ -119,7 +109,6 @@ export const getIndividualUser = async (req, res) => {
 
 // POST /api/users
 export const createUser = async (req, res) => {
-  // Returns all validation problems in one response.
   const errors = validateOnboarding(req.body);
 
   if (Object.keys(errors).length > 0) {
@@ -144,8 +133,20 @@ export const createUser = async (req, res) => {
       `SELECT user_id FROM users WHERE email = $1`,
       [email],
     );
+
+    const existingUsername = await pool.query(
+      `SELECT user_id FROM users WHERE username = $1 AND email != $2`,
+      [username, email],
+    );
+
+    if (existingUsername.rows.length > 0) {
+      return res.status(400).json({
+        message: "Please correct onboarding fields",
+        errors: { username: "That username is already taken." },
+      });
+    }
+
     let result;
-    // If user doesn;t exist; Create one
     if (user.rows.length === 0) {
       result = await pool.query(
         `INSERT INTO users
@@ -187,12 +188,28 @@ export const createUser = async (req, res) => {
       );
     }
 
-    addCookie(res, result.rows[0].user_id, result.rows[0].role);
+    // matching the pattern used everywhere else in authController.js.
+    const token = createToken(result.rows[0].user_id, result.rows[0].role);
+    setAuthCookie(res, token);
 
     const isNewUser = user.rows.length === 0;
 
     return res.status(isNewUser ? 201 : 200).json(result.rows[0]);
   } catch (error) {
+    if (error.code === "23505") {
+      if (error.constraint?.includes("username")) {
+        return res.status(400).json({
+          message: "Please correct onboarding fields",
+          errors: { username: "That username is already taken." },
+        });
+      }
+      if (error.constraint?.includes("email")) {
+        return res.status(400).json({
+          message: "Please correct onboarding fields",
+          errors: { email: "That email is already registered." },
+        });
+      }
+    }
     return res.status(500).json({ error: error.message });
   }
 };
