@@ -17,7 +17,7 @@ function OnboardingHeader({ currentStep, totalSteps, showProgress = true }) {
         )}
       </div>
 
-      {showProgress && (  
+      {showProgress && (
         <div className="mx-6 mt-4 h-1 overflow-hidden rounded-full bg-[#1d2030] sm:mx-8">
           <div
             className="h-full rounded-full bg-momentum-lime transition-[width] duration-300 ease-out"

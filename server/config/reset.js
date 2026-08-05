@@ -81,6 +81,7 @@ const createTables = async () => {
     group_id SERIAL PRIMARY KEY,
     group_name VARCHAR(100) NOT NULL,
     description TEXT,
+    invite_code VARCHAR(12) NOT NULL UNIQUE,
     created_by_user_id INTEGER REFERENCES Users(user_id),
     current_streak INTEGER DEFAULT 0
   );
@@ -88,48 +89,43 @@ const createTables = async () => {
   CREATE TABLE IF NOT EXISTS GroupMembers (
     member_id SERIAL PRIMARY KEY,
 
-    group_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_admin BOOLEAN DEFAULT FALSE,
-    daily_status VARCHAR(20),
-    current_streak INTEGER DEFAULT 0,
-
-    FOREIGN KEY (group_id)
+    group_id INTEGER NOT NULL
       REFERENCES AccountabilityGroups(group_id)
       ON DELETE CASCADE,
-
-    FOREIGN KEY (user_id)
+    user_id INTEGER NOT NULL
       REFERENCES Users(user_id)
       ON DELETE CASCADE,
-    
+
+    joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    daily_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+      CHECK (daily_status IN ('pending', 'done')),
+    current_streak INTEGER NOT NULL DEFAULT 0,
     UNIQUE(group_id, user_id)
   );
-  
-  
+
+
   CREATE TABLE IF NOT EXISTS WorkoutTemplates (
     template_id SERIAL PRIMARY KEY,
     title VARCHAR(100) NOT NULL
   );
-  
+
   CREATE TABLE IF NOT EXISTS WorkoutSessions (
     session_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     template_id INT NOT NULL,
     date DATE NOT NULL,
     duration_minutes INT DEFAULT 0,
+    started BOOLEAN NOT NULL DEFAULT FALSE,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
-    FOREIGN KEY (user_id) 
+    FOREIGN KEY (user_id)
       REFERENCES Users(user_id)
-      ON DELETE CASCADE,
-    FOREIGN KEY (template_id) 
-      REFERENCES WorkoutTemplates(template_id)
       ON DELETE CASCADE,
     FOREIGN KEY (template_id)
       REFERENCES WorkoutTemplates(template_id)
-      ON UPDATE CASCADE,
-    
+      ON UPDATE CASCADE
+      ON DELETE CASCADE,
+
     UNIQUE(user_id, template_id, date)
   );
 
@@ -140,14 +136,26 @@ const createTables = async () => {
     sets INT NOT NULL,
     reps INT NOT NULL,
     exercise_order INT NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (session_id)
       REFERENCES WorkoutSessions(session_id)
-      ON UPDATE CASCADE,
-    FOREIGN KEY (exercise_id) 
-      REFERENCES Exercises(exercise_id) 
       ON UPDATE CASCADE
-    
+      ON DELETE CASCADE,
+    FOREIGN KEY (exercise_id)
+      REFERENCES Exercises(exercise_id)
+      ON UPDATE CASCADE
+      ON DELETE CASCADE
+
   );
+
+  CREATE INDEX IF NOT EXISTS idx_groupmembers_user_id
+    ON GroupMembers(user_id);
+
+  CREATE INDEX IF NOT EXISTS idx_groupmembers_group_id
+    ON GroupMembers(group_id);
+
+  CREATE INDEX IF NOT EXISTS idx_workoutsessions_user_date
+    ON WorkoutSessions(user_id, date);
   `;
 
   try {
@@ -155,6 +163,7 @@ const createTables = async () => {
     console.log("tables created successfully");
   } catch (error) {
     console.error("error creating tables", error);
+    throw error;
   }
 };
 
@@ -199,29 +208,29 @@ const seedWorkoutTemplateTable = async () => {
   }
 };
 
-const seedWorkoutTemplateExercisesTable = async () => {
-  try {
-    for (const workoutTemplateExercise of workoutTemplateExercises) {
-      const insertQuery = {
-        text: "INSERT INTO workouttemplateexercises (template_id, exercise_id, sets, reps, exercise_order) VALUES ($1, $2, $3, $4, $5)",
-      };
+// const seedWorkoutTemplateExercisesTable = async () => {
+//   try {
+//     for (const workoutTemplateExercise of workoutTemplateExercises) {
+//       const insertQuery = {
+//         text: "INSERT INTO workouttemplateexercises (template_id, exercise_id, sets, reps, exercise_order) VALUES ($1, $2, $3, $4, $5)",
+//       };
 
-      const values = [
-        workoutTemplateExercise.template_id,
-        workoutTemplateExercise.exercise_id,
-        workoutTemplateExercise.sets,
-        workoutTemplateExercise.reps,
-        workoutTemplateExercise.exercise_order,
-      ];
+//       const values = [
+//         workoutTemplateExercise.template_id,
+//         workoutTemplateExercise.exercise_id,
+//         workoutTemplateExercise.sets,
+//         workoutTemplateExercise.reps,
+//         workoutTemplateExercise.exercise_order,
+//       ];
 
-      await pool.query(insertQuery, values);
-    }
-    console.log(`✅ WorkoutTemplateExercises added successfully`);
-  } catch (error) {
-    console.error("⚠️ Error seeding WorkoutTemplateExercises:", error.message);
-    return;
-  }
-};
+//       await pool.query(insertQuery, values);
+//     }
+//     console.log(`✅ WorkoutTemplateExercises added successfully`);
+//   } catch (error) {
+//     console.error("⚠️ Error seeding WorkoutTemplateExercises:", error.message);
+//     return;
+//   }
+// };
 
 const seedAdmin = async () => {
   try {
@@ -279,4 +288,11 @@ const seedTables = async () => {
   await seedWorkoutTemplateTable();
 };
 
-seedTables();
+seedTables()
+  .catch((error) => {
+    console.error("Unable to reset database:", error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await pool.end();
+  });

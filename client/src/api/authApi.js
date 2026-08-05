@@ -15,3 +15,10 @@ export function getCurrentUser() {
 export function logoutUser() {
   return apiRequest("/api/auth/logout", { method: "POST" });
 }
+
+export function loginUser(payload) {
+  return apiRequest("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

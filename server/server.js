@@ -3,13 +3,14 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.js";
+import { authenticateToken } from "./middleware/authenticateToken.js";
 import userRouter from "./routes/users.js";
+import progressRouter from "./routes/progressInsight.js";
 import { connectDB } from "./config/database.js";
 import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
 import groupRouter from "./routes/groups.js";
-import { authenticateToken } from "./middleware/authenticateToken.js";
 
 // create express app
 const app = express();
@@ -28,6 +29,13 @@ app.use(
 app.use(express.json());
 // Parses the authToken cookie into req.cookies for authenticateToken.
 app.use(cookieParser());
+app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
+app.use("/api/progressInsight", authenticateToken, progressRouter);
+
+// Render uses this endpoint to confirm that the web service is responsive.
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
 
 app.use("/api/exercises", exerciseRouter);
 app.use("/api/workouttemplates", workoutTemplateRouter);
@@ -35,6 +43,7 @@ app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
 app.use("/api/groups", groupRouter);
+app.use("/api/progressInsight", authenticateToken, progressRouter);
 
 app.get("/", (req, res) => {
   res

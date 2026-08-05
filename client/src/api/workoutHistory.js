@@ -1,15 +1,5 @@
 import { apiRequest } from "./apiClient.js";
 
-async function readJson(response) {
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.message || data.error || "Request failed");
-  }
-
-  return data;
-}
-
 export async function getWorkoutHistory(userId, filters, signal) {
   const params = new URLSearchParams({
     status: filters.status,
@@ -22,19 +12,13 @@ export async function getWorkoutHistory(userId, filters, signal) {
     params.set("muscle", filters.muscle);
   }
 
-  const response = await fetch(
-    `${API_BASE_URL}/workoutsessions/user/${userId}/history?${params}`,
-    { signal, credentials: "include" },
-  );
-
-  return readJson(response);
+  return apiRequest(`/api/workoutsessions/user/${userId}/history?${params}`, {
+    signal,
+  });
 }
 
-export async function getWorkoutTemplateDetails(templateId, signal) {
-  const response = await fetch(
-    `${API_BASE_URL}/workouttemplates/${templateId}/exercises`,
-    { signal, credentials: "include" },
-  );
-
-  return readJson(response);
+export async function getWorkoutSessionDetails(sessionId, signal) {
+  return apiRequest(`/api/workoutsessions/${sessionId}/exercises`, {
+    signal,
+  });
 }

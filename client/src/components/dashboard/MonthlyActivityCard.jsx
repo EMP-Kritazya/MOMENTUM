@@ -1,20 +1,60 @@
+import { useEffect, useState } from "react";
 import { Activity } from "lucide-react";
-
-export const monthlyActivity = {
-  totalWorkouts: 18,
-  weekdayLabels: ["M", "T", "W", "T", "F", "S", "S"],
-  // 5 rows (weeks) × 7 columns (days)
-  grid: [
-    [false, true, true, true, true, false, false],
-    [true, true, false, true, true, false, false],
-    [true, false, true, true, false, true, false],
-    [true, true, false, false, true, false, false],
-    [true, true, false, true, false, false, false],
-  ],
-};
+import { getActivitySummary } from "../../api/usersApi";
 
 export default function MonthlyActivityCard() {
-  const { totalWorkouts, weekdayLabels, grid } = monthlyActivity;
+  const [monthly, setMonthly] = useState(null);
+  const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    getActivitySummary()
+      .then((data) => {
+        if (!active) return;
+        setMonthly(data.monthly);
+        setStatus("ready");
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.message);
+        setStatus("error");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (status === "loading") {
+    return (
+      <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
+        <div className="h-5 w-40 animate-pulse rounded bg-white/10" />
+        <div className="mt-8 grid grid-cols-7 gap-2">
+          {Array.from({ length: 35 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-square animate-pulse rounded-lg bg-white/5"
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
+        <h3 className="text-lg font-semibold text-white">Monthly Activity</h3>
+        <p className="mt-3 text-sm text-red-400">
+          Couldn&apos;t load activity: {error}
+        </p>
+      </section>
+    );
+  }
+
+  const { totalWorkouts, weekdayLabels, grid } = monthly;
 
   return (
     <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">

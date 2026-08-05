@@ -15,10 +15,18 @@ export default function HistoryTable({ workouts, onOpenWorkout }) {
       <table className="w-full border-collapse text-left">
         <thead className="border-b border-momentum-border text-xs uppercase tracking-wider text-momentum-muted">
           <tr>
-            <th scope="col" className="px-5 py-4 font-medium">Workout</th>
-            <th scope="col" className="px-5 py-4 font-medium">Date</th>
-            <th scope="col" className="px-5 py-4 font-medium">Duration</th>
-            <th scope="col" className="px-5 py-4 font-medium">Status</th>
+            <th scope="col" className="px-5 py-4 font-medium">
+              Workout
+            </th>
+            <th scope="col" className="px-5 py-4 font-medium">
+              Date
+            </th>
+            <th scope="col" className="px-5 py-4 font-medium">
+              Duration
+            </th>
+            <th scope="col" className="px-5 py-4 font-medium">
+              Status
+            </th>
             <th scope="col" className="w-14 px-5 py-4">
               <span className="sr-only">Actions</span>
             </th>
@@ -27,7 +35,10 @@ export default function HistoryTable({ workouts, onOpenWorkout }) {
 
         <tbody className="divide-y divide-momentum-border">
           {workouts.map((workout) => (
-            <tr key={workout.session_id} className="transition-colors hover:bg-white/[0.02]">
+            <tr
+              key={workout.session_id}
+              className="transition-colors hover:bg-white/[0.02]"
+            >
               <td className="px-5 py-4">
                 <p className="font-semibold text-white">{workout.title}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">

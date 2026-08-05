@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { getWorkoutTemplateDetails } from "../../api/workoutHistory";
+import { getWorkoutSessionDetails } from "../../api/workoutHistory";
 
 export default function WorkoutHistoryModal({ workout, onClose }) {
   const [details, setDetails] = useState(null);
@@ -10,8 +10,10 @@ export default function WorkoutHistoryModal({ workout, onClose }) {
     if (!workout) return undefined;
 
     const controller = new AbortController();
+    setDetails(null);
+    setError("");
 
-    getWorkoutTemplateDetails(workout.template_id, controller.signal)
+    getWorkoutSessionDetails(workout.session_id, controller.signal)
       .then(setDetails)
       .catch((requestError) => {
         if (requestError.name !== "AbortError") {
@@ -54,7 +56,10 @@ export default function WorkoutHistoryModal({ workout, onClose }) {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-momentum-lime">
               Workout details
             </p>
-            <h2 id="history-modal-heading" className="mt-2 font-display text-3xl text-white">
+            <h2
+              id="history-modal-heading"
+              className="mt-2 font-display text-3xl text-white"
+            >
               {workout.title}
             </h2>
           </div>
@@ -82,7 +87,9 @@ export default function WorkoutHistoryModal({ workout, onClose }) {
                 className="flex items-center justify-between gap-4 rounded-xl border border-momentum-border bg-momentum-bg p-4"
               >
                 <div>
-                  <p className="font-semibold text-white">{exercise.exercise_name}</p>
+                  <p className="font-semibold text-white">
+                    {exercise.exercise_name}
+                  </p>
                   <p className="mt-1 text-sm text-momentum-muted">
                     {exercise.target_muscle}
                   </p>

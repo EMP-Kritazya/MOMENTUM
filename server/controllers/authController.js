@@ -3,21 +3,22 @@ import jwt from "jsonwebtoken";
 import { pool } from "../config/database.js";
 import "../config/dotenv.js";
 
+const SESSION_DURATION_MS = 60 * 60 * 1000; // 60 minutes
+
 // Signs a token with a consistent { userId, role } payload so every consumer
 // (getMe, requireAdmin, ownership checks) can rely on the same shape.
 export const createToken = (userId, role = "member") => {
   return jwt.sign({ userId, role }, `${process.env.JWT_SECRET}`, {
-    expiresIn: "15m",
+    expiresIn: SESSION_DURATION_MS / 1000, // jsonwebtoken accepts seconds
   });
 };
 
-// Sets the auth token as an httpOnly cookie so it is never exposed to client JS.
-const setAuthCookie = (res, token) => {
+export const setAuthCookie = (res, token) => {
   res.cookie("authToken", token, {
     httpOnly: true,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 1000, // 1 hour, matching the token expiry
+    maxAge: SESSION_DURATION_MS,
   });
 };
 
@@ -63,14 +64,8 @@ export async function loginAdmin(req, res) {
     }
 
     // Signs the user's ID and role for protected admin routes.
-    const token = jwt.sign(
-      {
-        userId: user.user_id,
-        role: user.role,
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-    );
+    const token = createToken(user.user_id, user.role);
+
     // Deliver the token as an httpOnly cookie instead of the response body,
     // so it is sent automatically and never readable by client-side JS.
     setAuthCookie(res, token);
@@ -97,7 +92,7 @@ export async function getMe(req, res) {
 
   try {
     const result = await pool.query(
-      `SELECT user_id, username, first_name, last_name, email, role, current_streak
+      `SELECT user_id, username, first_name, last_name, email, role, current_streak, weekly_commitment
        FROM users
        WHERE user_id = $1
        LIMIT 1`,
@@ -123,4 +118,44 @@ export function logout(req, res) {
     secure: process.env.NODE_ENV === "production",
   });
   return res.status(200).json({ message: "Logged out" });
+}
+
+// Authenticates a regular user via username + email
+export async function loginUser(req, res) {
+  const username = req.body.username?.trim();
+  const email = req.body.email?.trim().toLowerCase();
+
+  if (!username || !email) {
+    return res.status(400).json({ message: "Username and email are required" });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT user_id, username, first_name, last_name, email, role, current_streak
+       FROM users
+       WHERE username = $1 AND email = $2
+       LIMIT 1`,
+      [username, email],
+    );
+
+    const user = result.rows[0];
+
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "No account found with that username and email" });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured.");
+    }
+
+    const token = createToken(user.user_id, user.role);
+    setAuthCookie(res, token);
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    console.error("Unable to authenticate user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }

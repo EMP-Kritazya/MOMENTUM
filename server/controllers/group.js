@@ -1,206 +1,284 @@
+import { randomBytes } from "node:crypto";
 import { pool } from "../config/database.js";
 
-// GET /api/groups
-export const getGroups = async (req, res) => {
-  const { user_id } = req.query;
-  try {
-    let results;
-    if (user_id) {
-      results = await pool.query(
-        `SELECT g.*
-         FROM groupmembers gm
-         JOIN accountabilitygroups g ON g.group_id = gm.group_id
-         WHERE gm.user_id = $1
-         ORDER BY g.group_id`,
-        [user_id],
-      );
-    } else {
-      results = await pool.query(
-        "SELECT * FROM accountabilitygroups ORDER BY group_id",
-      );
-    }
-    res.status(200).json(results.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+function createInviteCode() {
+  return randomBytes(4).toString("hex").toUpperCase();
+}
 
-// GET /api/groups/:groupId
-export const getIndividualGroup = async (req, res) => {
-  const { groupId } = req.params;
+function parseGroupId(value) {
+  const groupId = Number.parseInt(value, 10);
+  return Number.isInteger(groupId) && groupId > 0 ? groupId : null;
+}
+
+async function findMembership(groupId, userId) {
+  const result = await pool.query(
+    `SELECT is_admin
+     FROM groupmembers
+     WHERE group_id = $1 AND user_id = $2
+     LIMIT 1`,
+    [groupId, userId],
+  );
+  return result.rows[0] ?? null;
+}
+
+// GET /api/groups
+export async function getGroups(req, res) {
   try {
     const result = await pool.query(
-      "SELECT * FROM accountabilitygroups WHERE group_id = $1",
+      `SELECT g.group_id,
+              g.group_name,
+              g.description,
+              g.invite_code,
+              g.created_by_user_id,
+              g.current_streak,
+              gm.is_admin AS current_user_is_admin
+       FROM groupmembers gm
+       JOIN accountabilitygroups g
+         ON g.group_id = gm.group_id
+       WHERE gm.user_id = $1
+       ORDER BY g.group_id`,
+      [req.auth.userId],
+    );
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Unable to load groups:", error);
+    return res.status(500).json({ message: "Unable to load groups" });
+  }
+}
+
+// GET /api/groups/:groupId
+export async function getIndividualGroup(req, res) {
+  const groupId = parseGroupId(req.params.groupId);
+  if (!groupId) {
+    return res.status(400).json({ message: "A valid group ID is required" });
+  }
+
+  try {
+    const membership = await findMembership(groupId, req.auth.userId);
+    if (!membership) {
+      return res.status(403).json({ message: "Group membership required" });
+    }
+
+    const result = await pool.query(
+      `SELECT group_id, group_name, description, invite_code,
+              created_by_user_id, current_streak
+       FROM accountabilitygroups
+       WHERE group_id = $1`,
       [groupId],
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Group not found" });
     }
-    res.status(200).json(result.rows[0]);
+    return res.status(200).json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Unable to load group:", error);
+    return res.status(500).json({ message: "Unable to load group" });
   }
-};
+}
 
 // GET /api/groups/:groupId/members
-export const getGroupMembers = async (req, res) => {
-  const { groupId } = req.params;
+export async function getGroupMembers(req, res) {
+  const groupId = parseGroupId(req.params.groupId);
+  if (!groupId) {
+    return res.status(400).json({ message: "A valid group ID is required" });
+  }
+
   try {
-    const results = await pool.query(
+    const membership = await findMembership(groupId, req.auth.userId);
+    if (!membership) {
+      return res.status(403).json({ message: "Group membership required" });
+    }
+
+    const result = await pool.query(
       `SELECT u.user_id,
               u.username,
               u.first_name,
               u.last_name,
               gm.is_admin,
               gm.current_streak,
-              gm.joined_at
+              gm.joined_at,
+              CASE
+                WHEN EXISTS (
+                  SELECT 1
+                  FROM workoutsessions ws
+                  WHERE ws.user_id = u.user_id
+                    AND ws.date = CURRENT_DATE
+                    AND ws.completed = TRUE
+                ) THEN 'done'
+                ELSE 'pending'
+              END AS daily_status
        FROM groupmembers gm
        JOIN users u ON u.user_id = gm.user_id
        WHERE gm.group_id = $1
-       ORDER BY gm.joined_at ASC`,
+       ORDER BY gm.joined_at`,
       [groupId],
     );
-    res.status(200).json(results.rows);
+    return res.status(200).json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Unable to load group members:", error);
+    return res.status(500).json({ message: "Unable to load group members" });
   }
-};
+}
 
 // POST /api/groups
-// Creating a group is basically TWO writes:
-//   1. insert the group
-//   2. add the creator as its first member (and admin)
-export const createGroup = async (req, res) => {
-  const { group_name, description, created_by_user_id } = req.body;
+export async function createGroup(req, res) {
+  const groupName = req.body.group_name?.trim();
+  const description = req.body.description?.trim() || null;
+  const creatorId = req.auth.userId;
 
-  if (!group_name || !created_by_user_id) {
-    return res
-      .status(400)
-      .json({ message: "group_name and created_by_user_id are required" });
+  if (!groupName) {
+    return res.status(400).json({ message: "group_name is required" });
   }
 
-  const client = await pool.connect(); // we create one dedicated connection for the txn
+  const client = await pool.connect();
   try {
     await client.query("BEGIN");
-
+    const inviteCode = createInviteCode();
     const groupResult = await client.query(
-      `INSERT INTO accountabilitygroups (group_name, description, created_by_user_id)
-       VALUES ($1, $2, $3)
+      `INSERT INTO accountabilitygroups
+        (group_name, description, invite_code, created_by_user_id)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [group_name, description, created_by_user_id],
+      [groupName, description, inviteCode, creatorId],
     );
     const group = groupResult.rows[0];
 
-    // Creator joins their own group as admin.
     await client.query(
       `INSERT INTO groupmembers (group_id, user_id, is_admin)
        VALUES ($1, $2, TRUE)`,
-      [group.group_id, created_by_user_id],
+      [group.group_id, creatorId],
     );
-
     await client.query("COMMIT");
-    res.status(201).json(group);
+    return res.status(201).json(group);
   } catch (error) {
-    await client.query("ROLLBACK"); // undo both writes on any failure
-    if (error.code === "23503") {
+    await client.query("ROLLBACK");
+    if (error.code === "23505") {
       return res
-        .status(400)
-        .json({ message: "created_by_user_id does not exist" });
+        .status(409)
+        .json({ message: "Please try creating the group again" });
     }
-    res.status(500).json({ error: error.message });
+    console.error("Unable to create group:", error);
+    return res.status(500).json({ message: "Unable to create group" });
   } finally {
-    client.release(); // ALWAYS return the connection to the pool
+    client.release();
   }
-};
+}
 
-// PATCH /api/groups/:groupId
-export const updateGroup = async (req, res) => {
-  const { groupId } = req.params;
-  const { group_name, description } = req.body;
-  try {
-    const result = await pool.query(
-      `UPDATE accountabilitygroups
-       SET group_name  = COALESCE($1, group_name),
-           description = COALESCE($2, description)
-       WHERE group_id = $3
-       RETURNING *`,
-      [group_name, description, groupId],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Group not found" });
-    }
-    res.status(200).json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// DELETE /api/groups/:groupId
-export const deleteGroup = async (req, res) => {
-  const { groupId } = req.params;
-  try {
-    const result = await pool.query(
-      "DELETE FROM accountabilitygroups WHERE group_id = $1 RETURNING *",
-      [groupId],
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Group not found" });
-    }
-    res.status(200).json({ message: "Group deleted", group: result.rows[0] });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// POST /api/groups/:groupId/members   body: { user_id }
-export const joinGroup = async (req, res) => {
-  const { groupId } = req.params;
-  const { user_id } = req.body;
-
-  if (!user_id) {
-    return res.status(400).json({ message: "user_id is required" });
+// POST /api/groups/join
+export async function joinGroupByInviteCode(req, res) {
+  const inviteCode = req.body.invite_code?.trim().toUpperCase();
+  if (!inviteCode) {
+    return res.status(400).json({ message: "invite_code is required" });
   }
 
   try {
     const result = await pool.query(
       `INSERT INTO groupmembers (group_id, user_id)
-       VALUES ($1, $2)
+       SELECT group_id, $2
+       FROM accountabilitygroups
+       WHERE invite_code = $1
        RETURNING *`,
-      [groupId, user_id],
+      [inviteCode, req.auth.userId],
     );
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    // FK: group or user doesn't exist.
-    if (error.code === "23503") {
-      return res.status(400).json({ message: "group or user does not exist" });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Invite code not found" });
     }
-    // UNIQUE(group_id, user_id): already a member.
+    return res.status(201).json(result.rows[0]);
+  } catch (error) {
     if (error.code === "23505") {
       return res
         .status(409)
-        .json({ message: "User is already a member of this group" });
+        .json({ message: "You are already a member of this group" });
     }
-    res.status(500).json({ error: error.message });
+    console.error("Unable to join group:", error);
+    return res.status(500).json({ message: "Unable to join group" });
   }
-};
+}
 
-// DELETE /api/groups/:groupId/members/:userId
-export const leaveGroup = async (req, res) => {
-  const { groupId, userId } = req.params;
+// PATCH /api/groups/:groupId
+export async function updateGroup(req, res) {
+  const groupId = parseGroupId(req.params.groupId);
+  const groupName = req.body.group_name?.trim() || null;
+  const description = req.body.description?.trim() || null;
+  if (!groupId) {
+    return res.status(400).json({ message: "A valid group ID is required" });
+  }
+
+  try {
+    const membership = await findMembership(groupId, req.auth.userId);
+    if (!membership?.is_admin) {
+      return res.status(403).json({ message: "Group admin access required" });
+    }
+    const result = await pool.query(
+      `UPDATE accountabilitygroups
+       SET group_name = COALESCE($1, group_name),
+           description = COALESCE($2, description)
+       WHERE group_id = $3
+       RETURNING *`,
+      [groupName, description, groupId],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("Unable to update group:", error);
+    return res.status(500).json({ message: "Unable to update group" });
+  }
+}
+
+// DELETE /api/groups/:groupId
+export async function deleteGroup(req, res) {
+  const groupId = parseGroupId(req.params.groupId);
+  if (!groupId) {
+    return res.status(400).json({ message: "A valid group ID is required" });
+  }
+
+  try {
+    const membership = await findMembership(groupId, req.auth.userId);
+    if (!membership?.is_admin) {
+      return res.status(403).json({ message: "Group admin access required" });
+    }
+    const result = await pool.query(
+      `DELETE FROM accountabilitygroups WHERE group_id = $1 RETURNING *`,
+      [groupId],
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    return res
+      .status(200)
+      .json({ message: "Group deleted", group: result.rows[0] });
+  } catch (error) {
+    console.error("Unable to delete group:", error);
+    return res.status(500).json({ message: "Unable to delete group" });
+  }
+}
+
+// DELETE /api/groups/:groupId/members/me
+export async function leaveGroup(req, res) {
+  const groupId = parseGroupId(req.params.groupId);
+  if (!groupId) {
+    return res.status(400).json({ message: "A valid group ID is required" });
+  }
+
   try {
     const result = await pool.query(
       `DELETE FROM groupmembers
        WHERE group_id = $1 AND user_id = $2
        RETURNING *`,
-      [groupId, userId],
+      [groupId, req.auth.userId],
     );
     if (result.rows.length === 0) {
       return res
         .status(404)
-        .json({ message: "User is not a member of this group" });
+        .json({ message: "You are not a member of this group" });
     }
-    res.status(200).json({ message: "Left group", membership: result.rows[0] });
+    return res
+      .status(200)
+      .json({ message: "Left group", membership: result.rows[0] });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Unable to leave group:", error);
+    return res.status(500).json({ message: "Unable to leave group" });
   }
-};
+}

@@ -1,5 +1,5 @@
 import DashboardHeader from "../components/dashboard/DashboardHeader";
-import TodaysWorkoutCard from "../components/dashboard/TodaysWorkoutCard";
+import { TodaysWorkoutCard } from "../components/dashboard/TodaysWorkoutCard";
 import ProgressInsightCard from "../components/dashboard/ProgressInsightCard";
 import MonthlyActivityCard from "../components/dashboard/MonthlyActivityCard";
 import WeeklyProgressCard from "../components/dashboard/WeeklyProgressCard";
@@ -16,7 +16,7 @@ import { useAuth } from "../context/authContext";
 // } from "../data/dashboardData";
 
 export default function Dashboard() {
-  const { user, loading, logout } = useAuth();
+  const { user } = useAuth();
 
   const displayName = user?.username ?? "";
   const current_streak = user?.current_streak ?? "";

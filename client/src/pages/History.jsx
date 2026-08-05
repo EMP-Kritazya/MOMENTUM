@@ -5,6 +5,7 @@ import HistoryPagination from "../components/history/HistoryPagination";
 import HistoryTable from "../components/history/HistoryTable";
 import WorkoutHistoryModal from "../components/history/WorkoutHistoryModal";
 import { getWorkoutHistory } from "../api/workoutHistory";
+import { useAuth } from "../context/authContext";
 
 const initialFilters = {
   status: "all",
@@ -21,16 +22,8 @@ const emptyPagination = {
   total_pages: 0,
 };
 
-function readStoredUser() {
-  try {
-    return JSON.parse(localStorage.getItem("momentumUser"));
-  } catch {
-    return null;
-  }
-}
-
 export default function History() {
-  const [user] = useState(readStoredUser);
+  const { user, loading: authLoading } = useAuth();
   const [filters, setFilters] = useState(initialFilters);
   const [workouts, setWorkouts] = useState([]);
   const [muscleOptions, setMuscleOptions] = useState([]);
@@ -40,6 +33,10 @@ export default function History() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (authLoading) {
+      return undefined;
+    }
+
     if (!user?.user_id) {
       setLoading(false);
       return undefined;
@@ -65,7 +62,7 @@ export default function History() {
       });
 
     return () => controller.abort();
-  }, [user?.user_id, filters]);
+  }, [authLoading, user?.user_id, filters]);
 
   function updateFilter(name, value) {
     setFilters((current) => ({
@@ -98,7 +95,7 @@ export default function History() {
         />
       </div>
 
-      {!user?.user_id && (
+      {!authLoading &&!user?.user_id && (
         <div className="mt-8 rounded-2xl border border-momentum-border bg-momentum-panel p-8 text-center">
           <h2 className="font-display text-2xl text-white">No user selected</h2>
           <p className="mt-2 text-momentum-muted">
@@ -114,14 +111,19 @@ export default function History() {
       )}
 
       {user?.user_id && error && (
-        <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-red-300" role="alert">
+        <div
+          className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-red-300"
+          role="alert"
+        >
           {error}
         </div>
       )}
 
       {user?.user_id && !loading && !error && workouts.length === 0 && (
         <div className="mt-8 rounded-2xl border border-momentum-border bg-momentum-panel p-8 text-center">
-          <h2 className="font-display text-2xl text-white">No workouts found</h2>
+          <h2 className="font-display text-2xl text-white">
+            No workouts found
+          </h2>
           <p className="mt-2 text-momentum-muted">
             Try another filter or complete your first workout.
           </p>
@@ -130,7 +132,10 @@ export default function History() {
 
       {user?.user_id && !loading && !error && workouts.length > 0 && (
         <div className="mt-5">
-          <HistoryTable workouts={workouts} onOpenWorkout={setSelectedWorkout} />
+          <HistoryTable
+            workouts={workouts}
+            onOpenWorkout={setSelectedWorkout}
+          />
 
           <div className="space-y-3 md:hidden">
             {workouts.map((workout) => (

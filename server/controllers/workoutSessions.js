@@ -59,6 +59,7 @@ const GOAL_SCHEME = {
   improve_endurance: { sets: 3, reps: 15 },
   stay_active: { sets: 3, reps: 10 },
 };
+
 const DEFAULT_SCHEME = { sets: 3, reps: 10 };
 
 const DIFFICULTY_LABEL = {
@@ -175,53 +176,54 @@ function fillSlots(candidates, slots) {
   return chosen;
 }
 
-async function createTemplateExercises(sessionId, lastSessionId) {
+async function createTemplateExercises(lastSessionId, userId, today) {
   const client = await pool.connect();
   try {
-    // Load the session's template plus the owner's onboarding preferences.
-    const context = await client.query(
-      `SELECT ws.template_id,
-              u.experience_level,
-              u.fitness_goal,
-              u.equipment_available
-         FROM workoutsessions ws
-         JOIN users u ON u.user_id = ws.user_id
-        WHERE ws.session_id = $1`,
-      [sessionId],
-    );
-    if (context.rows.length === 0) {
-      throw new Error(`Session ${sessionId} not found`);
-    }
-    const {
-      template_id: templateId,
-      experience_level,
-      fitness_goal,
-      equipment_available,
-    } = context.rows[0];
-
-    // Deciding the split and difficulty band.
     let split;
     let difficulties;
     let previousExerciseIds = [];
+
+    const previous = await client.query(
+      `SELECT DISTINCT e.exercise_id, e.target_muscle
+           FROM workouttemplateexercises wte
+           JOIN exercises e ON e.exercise_id = wte.exercise_id
+          WHERE wte.session_id = $1`,
+      [lastSessionId],
+    );
+    previousExerciseIds = previous.rows.map((row) => row.exercise_id);
+    const previousSplit = classifySplit(
+      previous.rows.map((row) => row.target_muscle),
+    );
 
     if (lastSessionId === -1 || lastSessionId == null) {
       // First workout
       split = "upper";
     } else {
-      const previous = await client.query(
-        `SELECT DISTINCT e.exercise_id, e.target_muscle
-           FROM workouttemplateexercises wte
-           JOIN exercises e ON e.exercise_id = wte.exercise_id
-          WHERE wte.session_id = $1`,
-        [lastSessionId],
-      );
-      previousExerciseIds = previous.rows.map((row) => row.exercise_id);
-      const previousSplit = classifySplit(
-        previous.rows.map((row) => row.target_muscle),
-      );
       split = NEXT_SPLIT[previousSplit];
-      difficulties = EXPERIENCE_DIFFICULTY[experience_level] ?? ["beginner"];
     }
+
+    // Load the session's template plus the owner's onboarding preferences.
+    const context = await client.query(
+      `SELECT
+              u.experience_level,
+              u.fitness_goal,
+              u.equipment_available
+         FROM users u WHERE user_id = $1`,
+      [userId],
+    );
+    if (context.rows.length === 0) {
+      throw new Error(`User ${userId} not found`);
+    }
+    const { experience_level, fitness_goal, equipment_available } =
+      context.rows[0];
+
+    difficulties = EXPERIENCE_DIFFICULTY[experience_level] ?? ["beginner"];
+    const template_name = buildTitle(experience_level, split);
+    const response = await client.query(
+      `SELECT template_id FROM workouttemplates where title = $1`,
+      [template_name],
+    );
+    const templateId = response.rows[0].template_id;
 
     // Translate preferences into exercise-table filters.
     const equipment = mapUserEquipment(equipment_available);
@@ -258,6 +260,16 @@ async function createTemplateExercises(sessionId, lastSessionId) {
 
     await client.query("BEGIN");
 
+    const created = await client.query(
+      `INSERT INTO workoutsessions
+         (user_id, template_id, date, duration_minutes, completed)
+       VALUES ($1, $2, $3, $4, FALSE)
+       RETURNING *`,
+      [userId, templateId, today, 0],
+    );
+    const session = created.rows[0];
+    const sessionId = session.session_id;
+
     const placeholders = [];
     const values = [];
     chosen.forEach((exercise, index) => {
@@ -281,18 +293,9 @@ async function createTemplateExercises(sessionId, lastSessionId) {
       values,
     );
 
-    await client.query(
-      `UPDATE workouttemplates SET title = $1 WHERE template_id = $2`,
-      [buildTitle(experience_level, split), templateId],
-    );
-
     await client.query("COMMIT");
 
-    return {
-      templateId,
-      split,
-      exerciseIds: chosen.map((exercise) => exercise.exercise_id),
-    };
+    return session;
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
     throw error;
@@ -307,13 +310,15 @@ async function loadWorkoutPayload(session) {
       session.template_id,
     ]),
     pool.query(
-      `SELECT e.exercise_id,
+      `SELECT wte.template_exercise_id,
+              e.exercise_id,
               e.exercise_name,
               e.target_muscle,
               e.equipment_needed,
               wte.sets,
               wte.reps,
-              wte.exercise_order
+              wte.exercise_order,
+              wte.completed
          FROM workouttemplateexercises wte
          JOIN exercises e ON e.exercise_id = wte.exercise_id
         WHERE wte.session_id = $1
@@ -323,6 +328,8 @@ async function loadWorkoutPayload(session) {
   ]);
 
   return {
+    started: session.started ?? false,
+    completed: session.completed ?? false,
     session,
     title: templateResult.rows[0]?.title ?? null,
     exercises: exercisesResult.rows,
@@ -358,6 +365,64 @@ export const getIndividualSession = async (req, res) => {
   }
 };
 
+// GET /api/workoutsessions/:id/exercises
+// Returns the exact exercises generated for one of the signed-in user's sessions.
+export const getSessionExercises = async (req, res) => {
+  const userId = req.auth?.userId;
+  const sessionId = Number.parseInt(req.params.id, 10);
+
+  if (!Number.isInteger(sessionId) || sessionId < 1) {
+    return res.status(400).json({ message: "A valid session ID is required" });
+  }
+
+  try {
+    const sessionResult = await pool.query(
+      `SELECT ws.session_id,
+              ws.template_id,
+              ws.date,
+              ws.duration_minutes,
+              ws.started,
+              ws.completed,
+              wt.title
+         FROM workoutsessions ws
+         JOIN workouttemplates wt
+           ON wt.template_id = ws.template_id
+        WHERE ws.session_id = $1
+          AND ws.user_id = $2`,
+      [sessionId, userId],
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ message: "Workout session not found" });
+    }
+
+    const exercisesResult = await pool.query(
+      `SELECT wte.template_exercise_id,
+              e.exercise_id,
+              e.exercise_name,
+              e.target_muscle,
+              e.equipment_needed,
+              wte.sets,
+              wte.reps,
+              wte.exercise_order,
+              wte.completed
+         FROM workouttemplateexercises wte
+         JOIN exercises e
+           ON e.exercise_id = wte.exercise_id
+        WHERE wte.session_id = $1
+        ORDER BY wte.exercise_order ASC`,
+      [sessionId],
+    );
+
+    return res.status(200).json({
+      ...sessionResult.rows[0],
+      exercises: exercisesResult.rows,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 // GET /api/workoutsessions/todayssession
 export const todaysSession = async (req, res) => {
   const userId = req.auth?.userId;
@@ -378,7 +443,7 @@ export const todaysSession = async (req, res) => {
 
     // Find the last workout
     const previous = await pool.query(
-      `SELECT session_id
+      `SELECT session_id, template_id
          FROM workoutsessions
         WHERE user_id = $1
         ORDER BY date DESC, session_id DESC
@@ -386,24 +451,9 @@ export const todaysSession = async (req, res) => {
       [userId],
     );
     const lastSessionId = previous.rows[0]?.session_id ?? -1;
+    const templateId = previous.rows[0]?.template_id ?? -1;
 
-    // just so the FK is satisfied
-    const placeholder = await pool.query(
-      `INSERT INTO workouttemplates (title) VALUES ($1) RETURNING template_id`,
-      ["Generating workout…"],
-    );
-    const templateId = placeholder.rows[0].template_id;
-
-    const created = await pool.query(
-      `INSERT INTO workoutsessions
-         (user_id, template_id, date, duration_minutes, completed)
-       VALUES ($1, $2, $3, $4, FALSE)
-       RETURNING *`,
-      [userId, templateId, today, 0],
-    );
-    const session = created.rows[0];
-
-    await createTemplateExercises(session.session_id, lastSessionId);
+    const session = await createTemplateExercises(lastSessionId, userId, today);
 
     return res.status(201).json(await loadWorkoutPayload(session));
   } catch (error) {
@@ -453,33 +503,130 @@ export const createSession = async (req, res) => {
   }
 };
 
-// PATCH /api/workoutsessions/:id
+// PATCH /api/workoutsessions/
 export const updateSession = async (req, res) => {
-  const { id } = req.params;
-  const { user_id, template_id, date, duration_minutes, completed } = req.body;
+  const userId = req.auth?.userId;
+  const { started, completed } = req.body;
 
   try {
-    const result = await pool.query(
-      `UPDATE workoutsessions
-       SET user_id          = COALESCE($1, user_id),
-           template_id      = COALESCE($2, template_id),
-           date             = COALESCE($3, date),
-           duration_minutes = COALESCE($4, duration_minutes),
-           completed        = COALESCE($5, completed)
-       WHERE session_id = $6
-       RETURNING *`,
-      [user_id, template_id, date, duration_minutes, completed, id],
+    const session = await pool.query(
+      `SELECT session_id FROM workoutsessions WHERE user_id = $1 ORDER BY date DESC LIMIT 1`,
+      [userId],
     );
-
-    if (result.rows.length === 0) {
+    if (session.rows.length === 0) {
       return res.status(404).json({ message: "Session not found" });
     }
-    res.status(200).json(result.rows[0]);
+
+    const query = await pool.query(
+      `
+      UPDATE workoutsessions
+      SET
+        started=COALESCE($1, started),
+        completed=COALESCE($2, completed)
+      WHERE session_id = $3
+      RETURNING *
+      `,
+      [started, completed, session.rows[0].session_id],
+    );
+
+    return res.status(200).json(query.rows[0]);
   } catch (error) {
     if (error.code === "23503") {
       return res
         .status(400)
-        .json({ message: "user_id or template_id does not exist" });
+        .json({ message: "user_id or session_id does not exist" });
+    }
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// PATCH /api/workoutsessions/exercise/:templateExerciseId
+export const updateTemplateExercise = async (req, res) => {
+  const userId = req.auth?.userId;
+  const templateExerciseId = Number(req.params.templateExerciseId);
+  const { completed } = req.body;
+
+  if (typeof completed !== "boolean") {
+    return res.status(400).json({
+      message: "A boolean completed field is required",
+    });
+  }
+
+  try {
+    const updateResult = await pool.query(
+      `UPDATE workouttemplateexercises wte
+         SET completed = $1
+        FROM workoutsessions ws
+        WHERE wte.session_id = ws.session_id
+          AND ws.user_id = $2
+          AND wte.template_exercise_id = $3
+      RETURNING wte.session_id, wte.template_exercise_id, wte.completed`,
+      [completed, userId, templateExerciseId],
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ message: "Exercise not found" });
+    }
+
+    const sessionId = updateResult.rows[0].session_id;
+    const allCompleteResult = await pool.query(
+      `SELECT bool_and(completed) AS all_completed
+         FROM workouttemplateexercises
+        WHERE session_id = $1`,
+      [sessionId],
+    );
+
+    const sessionCompleted = allCompleteResult.rows[0]?.all_completed ?? false;
+
+    const sessionBefore = await pool.query(
+      `SELECT completed, date FROM workoutsessions WHERE session_id = $1`,
+      [sessionId],
+    );
+    const wasCompleted = sessionBefore.rows[0]?.completed ?? false;
+    const sessionDate = sessionBefore.rows[0]?.date;
+
+    await pool.query(
+      `UPDATE workoutsessions
+          SET completed = $1
+        WHERE session_id = $2`,
+      [sessionCompleted, sessionId],
+    );
+
+    // Streak only moves the first time a session flips to completed, so
+    // re-completing (or re-fetching) never double-counts a day.
+    let currentStreak;
+    if (sessionCompleted && !wasCompleted) {
+      const previousDayResult = await pool.query(
+        `SELECT 1
+           FROM workoutsessions
+          WHERE user_id = $1
+            AND completed = TRUE
+            AND date = $2::date - INTERVAL '1 day'
+          LIMIT 1`,
+        [userId, sessionDate],
+      );
+      const continuesStreak = previousDayResult.rows.length > 0;
+
+      const streakResult = await pool.query(
+        `UPDATE users
+            SET current_streak = CASE WHEN $1 THEN current_streak + 1 ELSE 1 END
+          WHERE user_id = $2
+          RETURNING current_streak`,
+        [continuesStreak, userId],
+      );
+      currentStreak = streakResult.rows[0]?.current_streak;
+    }
+
+    return res.status(200).json({
+      templateExercise: updateResult.rows[0],
+      sessionCompleted,
+      ...(currentStreak !== undefined ? { currentStreak } : {}),
+    });
+  } catch (error) {
+    if (error.code === "23503") {
+      return res
+        .status(400)
+        .json({ message: "user_id or session_id does not exist" });
     }
     res.status(500).json({ error: error.message });
   }
@@ -653,6 +800,155 @@ export const getUserWorkoutHistory = async (req, res) => {
         limit,
         total,
         total_pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+// Monday-start week boundary for a UTC-midnight date.
+function mondayOf(date) {
+  const day = date.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  return addDays(date, diff);
+}
+
+function addDays(date, days) {
+  const result = new Date(date);
+  result.setUTCDate(result.getUTCDate() + days);
+  return result;
+}
+
+function toISODate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+// Same estimate toTodayWorkout uses on the client when a session has no
+// recorded duration_minutes (every auto-generated session starts at 0).
+function estimateDurationMinutes(durationMinutes, totalSets) {
+  return durationMinutes || Math.max(20, Math.round(totalSets * 2.5));
+}
+
+// GET /api/workoutsessions/activity-summary
+export const getUserActivitySummary = async (req, res) => {
+  const userId = req.auth?.userId;
+  if (!userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  try {
+    const userResult = await pool.query(
+      `SELECT weekly_commitment FROM users WHERE user_id = $1`,
+      [userId],
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const workoutsGoal = userResult.rows[0].weekly_commitment || 0;
+
+    const now = new Date();
+    const today = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+
+    // Monthly grid: Monday-start weeks spanning the current calendar month.
+    const monthStart = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1),
+    );
+    const monthEnd = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0),
+    );
+    const gridStart = mondayOf(monthStart);
+    const lastWeekStart = mondayOf(monthEnd);
+
+    // Weekly bars: last 8 Monday-start weeks, including the current one.
+    const currentWeekStart = mondayOf(today);
+    const eightWeeksStart = addDays(currentWeekStart, -7 * 7);
+
+    const rangeStart = gridStart < eightWeeksStart ? gridStart : eightWeeksStart;
+
+    const sessionsResult = await pool.query(
+      `SELECT to_char(ws.date, 'YYYY-MM-DD') AS date,
+              ws.duration_minutes,
+              COALESCE(SUM(wte.sets), 0) AS total_sets
+         FROM workoutsessions ws
+         LEFT JOIN workouttemplateexercises wte
+           ON wte.session_id = ws.session_id
+        WHERE ws.user_id = $1
+          AND ws.completed = TRUE
+          AND ws.date >= $2
+          AND ws.date <= $3
+        GROUP BY ws.session_id, ws.date, ws.duration_minutes`,
+      [userId, toISODate(rangeStart), toISODate(today)],
+    );
+
+    const minutesByDate = new Map();
+    for (const row of sessionsResult.rows) {
+      minutesByDate.set(
+        row.date,
+        estimateDurationMinutes(row.duration_minutes, Number(row.total_sets)),
+      );
+    }
+
+    const grid = [];
+    let totalWorkouts = 0;
+    for (
+      let weekStart = gridStart;
+      weekStart <= lastWeekStart;
+      weekStart = addDays(weekStart, 7)
+    ) {
+      const week = [];
+      for (let i = 0; i < 7; i++) {
+        const day = addDays(weekStart, i);
+        const inMonth = day >= monthStart && day <= monthEnd;
+        const completed = inMonth && minutesByDate.has(toISODate(day));
+        if (completed) totalWorkouts += 1;
+        week.push(completed);
+      }
+      grid.push(week);
+    }
+
+    const bars = [];
+    for (let weeksAgo = 7; weeksAgo >= 0; weeksAgo -= 1) {
+      const weekStart = addDays(currentWeekStart, -7 * weeksAgo);
+      let count = 0;
+      for (let i = 0; i < 7; i++) {
+        if (minutesByDate.has(toISODate(addDays(weekStart, i)))) count += 1;
+      }
+      const value =
+        workoutsGoal > 0 ? Math.min(1, count / workoutsGoal) : count > 0 ? 1 : 0;
+      bars.push({ label: `W${8 - weeksAgo}`, value });
+    }
+
+    let workoutsCompleted = 0;
+    let activeMinutes = 0;
+    for (let i = 0; i < 7; i++) {
+      const minutes = minutesByDate.get(
+        toISODate(addDays(currentWeekStart, i)),
+      );
+      if (minutes !== undefined) {
+        workoutsCompleted += 1;
+        activeMinutes += minutes;
+      }
+    }
+    const weeklyGoalPercent =
+      workoutsGoal > 0
+        ? Math.min(100, Math.round((workoutsCompleted / workoutsGoal) * 100))
+        : 0;
+
+    return res.status(200).json({
+      monthly: {
+        totalWorkouts,
+        weekdayLabels: ["M", "T", "W", "T", "F", "S", "S"],
+        grid,
+      },
+      weekly: {
+        bars,
+        workoutsCompleted,
+        workoutsGoal,
+        activeMinutes,
+        weeklyGoalPercent,
       },
     });
   } catch (error) {
