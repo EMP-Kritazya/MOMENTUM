@@ -102,7 +102,7 @@ This unit, be sure to complete all tasks listed below. To complete a task, place
 
 ## Final Demo GIF
 
-(https://www.loom.com/share/d0b4bcf7e0a140a08fa024e510270d64)
+(https://www.loom.com/share/afab2e6ad9744cc896aa283a8c1d3f4c)
 
 The walkthrough should demonstrate:
 

@@ -21,8 +21,24 @@ async function findMembership(groupId, userId) {
   return result.rows[0] ?? null;
 }
 
+// Group ownership is based only on the original creator, never Users.role.
+async function findGroupOwnership(groupId, userId) {
+  const result = await pool.query(
+    `SELECT created_by_user_id,
+            (created_by_user_id = $2) AS is_creator
+       FROM accountabilitygroups
+      WHERE group_id = $1
+      LIMIT 1`,
+    [groupId, userId],
+  );
+
+  return result.rows[0] ?? null;
+}
+
 // GET /api/groups
 export async function getGroups(req, res) {
+  const userId = req.auth.userId;
+
   try {
     const result = await pool.query(
       `SELECT g.group_id,
@@ -31,13 +47,13 @@ export async function getGroups(req, res) {
               g.invite_code,
               g.created_by_user_id,
               g.current_streak,
-              gm.is_admin AS current_user_is_admin
+              (g.created_by_user_id = $1) AS current_user_is_creator
        FROM groupmembers gm
        JOIN accountabilitygroups g
          ON g.group_id = gm.group_id
        WHERE gm.user_id = $1
        ORDER BY g.group_id`,
-      [req.auth.userId],
+      [userId],
     );
     return res.status(200).json(result.rows);
   } catch (error) {
@@ -61,10 +77,11 @@ export async function getIndividualGroup(req, res) {
 
     const result = await pool.query(
       `SELECT group_id, group_name, description, invite_code,
-              created_by_user_id, current_streak
+              created_by_user_id, current_streak,
+              (created_by_user_id = $2) AS current_user_is_creator
        FROM accountabilitygroups
        WHERE group_id = $1`,
-      [groupId],
+      [groupId, req.auth.userId],
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Group not found" });
@@ -110,7 +127,7 @@ export async function getGroupMembers(req, res) {
        FROM groupmembers gm
        JOIN users u ON u.user_id = gm.user_id
        WHERE gm.group_id = $1
-       ORDER BY gm.joined_at`,
+       ORDER BY gm.joined_at, gm.member_id`,
       [groupId],
     );
     return res.status(200).json(result.rows);
@@ -128,6 +145,16 @@ export async function createGroup(req, res) {
 
   if (!groupName) {
     return res.status(400).json({ message: "group_name is required" });
+  }
+  if (groupName.length > 100) {
+    return res.status(400).json({
+      message: "Group name must be 100 characters or fewer",
+    });
+  }
+  if (description && description.length > 500) {
+    return res.status(400).json({
+      message: "Description must be 500 characters or fewer",
+    });
   }
 
   const client = await pool.connect();
@@ -198,24 +225,77 @@ export async function joinGroupByInviteCode(req, res) {
 // PATCH /api/groups/:groupId
 export async function updateGroup(req, res) {
   const groupId = parseGroupId(req.params.groupId);
-  const groupName = req.body.group_name?.trim() || null;
-  const description = req.body.description?.trim() || null;
   if (!groupId) {
     return res.status(400).json({ message: "A valid group ID is required" });
   }
 
+  const hasGroupName = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "group_name",
+  );
+  const hasDescription = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "description",
+  );
+  if (!hasGroupName && !hasDescription) {
+    return res.status(400).json({
+      message: "Provide group_name or description",
+    });
+  }
+
+  const groupName = hasGroupName
+    ? String(req.body.group_name ?? "").trim()
+    : null;
+  const description = hasDescription
+    ? String(req.body.description ?? "").trim() || null
+    : null;
+
+  if (hasGroupName && !groupName) {
+    return res.status(400).json({ message: "Group name is required" });
+  }
+  if (groupName && groupName.length > 100) {
+    return res.status(400).json({
+      message: "Group name must be 100 characters or fewer",
+    });
+  }
+  if (description && description.length > 500) {
+    return res.status(400).json({
+      message: "Description must be 500 characters or fewer",
+    });
+  }
+
   try {
-    const membership = await findMembership(groupId, req.auth.userId);
-    if (!membership?.is_admin) {
-      return res.status(403).json({ message: "Group admin access required" });
+    const ownership = await findGroupOwnership(groupId, req.auth.userId);
+    if (!ownership) {
+      return res.status(404).json({ message: "Group not found" });
     }
+    if (!ownership.is_creator) {
+      return res.status(403).json({
+        message: "Only the group creator can edit this group",
+      });
+    }
+
     const result = await pool.query(
       `UPDATE accountabilitygroups
-       SET group_name = COALESCE($1, group_name),
-           description = COALESCE($2, description)
-       WHERE group_id = $3
-       RETURNING *`,
-      [groupName, description, groupId],
+          SET group_name = CASE
+                WHEN $1::boolean THEN $2
+                ELSE group_name
+              END,
+              description = CASE
+                WHEN $3::boolean THEN $4
+                ELSE description
+              END
+        WHERE group_id = $5
+          AND created_by_user_id = $6
+        RETURNING *`,
+      [
+        hasGroupName,
+        groupName,
+        hasDescription,
+        description,
+        groupId,
+        req.auth.userId,
+      ],
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Group not found" });
@@ -235,13 +315,22 @@ export async function deleteGroup(req, res) {
   }
 
   try {
-    const membership = await findMembership(groupId, req.auth.userId);
-    if (!membership?.is_admin) {
-      return res.status(403).json({ message: "Group admin access required" });
+    const ownership = await findGroupOwnership(groupId, req.auth.userId);
+    if (!ownership) {
+      return res.status(404).json({ message: "Group not found" });
     }
+    if (!ownership.is_creator) {
+      return res.status(403).json({
+        message: "Only the group creator can delete this group",
+      });
+    }
+
     const result = await pool.query(
-      `DELETE FROM accountabilitygroups WHERE group_id = $1 RETURNING *`,
-      [groupId],
+      `DELETE FROM accountabilitygroups
+        WHERE group_id = $1
+          AND created_by_user_id = $2
+        RETURNING *`,
+      [groupId, req.auth.userId],
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Group not found" });
@@ -263,6 +352,16 @@ export async function leaveGroup(req, res) {
   }
 
   try {
+    const ownership = await findGroupOwnership(groupId, req.auth.userId);
+    if (!ownership) {
+      return res.status(404).json({ message: "Group not found" });
+    }
+    if (ownership.is_creator) {
+      return res.status(409).json({
+        message: "The group creator cannot leave. Delete the group instead.",
+      });
+    }
+
     const result = await pool.query(
       `DELETE FROM groupmembers
        WHERE group_id = $1 AND user_id = $2

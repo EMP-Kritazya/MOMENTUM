@@ -8,7 +8,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "reset": "cd config && node --require dotenv/config reset.js",
-    "seed:admin": "node config/seedAdmin.js"
+    "seed:admin": "node config/seedAdmin.js",
+    "seed:demo": "node config/seedDemo.js"
   },
   "keywords": [],
   "author": "",

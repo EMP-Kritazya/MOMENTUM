@@ -1,9 +1,9 @@
 // Uses the deployed API URL when configured, otherwise the local server.
-// const API_URL = import.meta.env.PROD
-//   ? "https://momentum-server-oigp.onrender.com"
-//   : "http://localhost:3001";
-const API_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const API_URL = import.meta.env.PROD
+  ? "https://momentum-bxgh.onrender.com"
+  : "http://localhost:3001";
+// const API_URL =
+//   import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 // Sends a request and provides consistent JSON and error handling.
 export async function apiRequest(path, options = {}) {
@@ -25,6 +25,7 @@ export async function apiRequest(path, options = {}) {
   if (!response.ok) {
     const error = new Error(data.message ?? data.error ?? "Request failed.");
     error.status = response.status;
+    error.data = data;
     throw error;
   }
   return data;

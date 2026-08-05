@@ -74,6 +74,16 @@ export default function ActiveWorkout() {
     };
   }, []);
 
+  // Treats the focused workout runner like a modal: Escape exits to Dashboard.
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") navigate("/dashboard");
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [navigate]);
+
   const handleExerciseComplete = async (templateExerciseId) => {
     try {
       const result = await updateExerciseCompletion(templateExerciseId, {
@@ -166,6 +176,10 @@ export default function ActiveWorkout() {
   const allExercisesCompleted =
     exerciseQueue.length > 0 &&
     completedExercises.length === exerciseQueue.length;
+  const progressPercent =
+    exerciseQueue.length > 0
+      ? Math.round((completedExercises.length / exerciseQueue.length) * 100)
+      : 0;
 
   // currExercise is only null once every exercise has been completed
   // (see handleExerciseComplete, which advances currentIndex past the end).
@@ -220,9 +234,18 @@ export default function ActiveWorkout() {
           onExit={() => navigate("/dashboard")}
         />
         {/* ── Overall progress bar ───────────────────────────────────────── */}
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/5">
-          {/* TODO: width bound to completion % */}
-          <div className="h-full w-1/5 rounded-full bg-momentum-lime" />
+        <div
+          className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/5"
+          role="progressbar"
+          aria-label="Workout progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressPercent}
+        >
+          <div
+            className="h-full rounded-full bg-momentum-lime transition-[width] duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
 
         <CurrentExerciseCard

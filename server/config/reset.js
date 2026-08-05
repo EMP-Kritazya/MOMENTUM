@@ -4,6 +4,7 @@ import exercises from "../data/exercise.js";
 import workoutTemplates from "../data/workoutTemplates.js";
 import workoutTemplateExercises from "../data/workoutTemplateExercises.js";
 import bcrypt from "bcryptjs";
+import { seedDemoData } from "./demoSeeder.js";
 
 // Reads the initial administrator details from environment variables.
 const {
@@ -72,9 +73,13 @@ const createTables = async () => {
   CREATE TABLE IF NOT EXISTS Exercises (
     exercise_id SERIAL PRIMARY KEY,
     exercise_name VARCHAR(100) NOT NULL,
-    target_muscle VARCHAR(50),
-    equipment_needed VARCHAR(50),
-    difficulty VARCHAR(30)
+    target_muscle VARCHAR(50) NOT NULL,
+    equipment_needed VARCHAR(50) NOT NULL,
+    difficulty VARCHAR(30) NOT NULL
+      CHECK (difficulty IN ('beginner', 'intermediate', 'expert')),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS AccountabilityGroups (
@@ -82,7 +87,9 @@ const createTables = async () => {
     group_name VARCHAR(100) NOT NULL,
     description TEXT,
     invite_code VARCHAR(12) NOT NULL UNIQUE,
-    created_by_user_id INTEGER REFERENCES Users(user_id),
+    created_by_user_id INTEGER NOT NULL
+      REFERENCES Users(user_id)
+      ON DELETE CASCADE,
     current_streak INTEGER DEFAULT 0
   );
 
@@ -107,7 +114,20 @@ const createTables = async () => {
 
   CREATE TABLE IF NOT EXISTS WorkoutTemplates (
     template_id SERIAL PRIMARY KEY,
-    title VARCHAR(100) NOT NULL
+    title VARCHAR(100) NOT NULL,
+    experience_level VARCHAR(30) NOT NULL
+      CHECK (experience_level IN (
+        'beginner',
+        'some_experience',
+        'intermediate',
+        'advanced'
+      )),
+    workout_split VARCHAR(10) NOT NULL
+      CHECK (workout_split IN ('upper', 'lower', 'full')),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (experience_level, workout_split)
   );
 
   CREATE TABLE IF NOT EXISTS WorkoutSessions (
@@ -124,7 +144,7 @@ const createTables = async () => {
     FOREIGN KEY (template_id)
       REFERENCES WorkoutTemplates(template_id)
       ON UPDATE CASCADE
-      ON DELETE CASCADE,
+      ON DELETE RESTRICT,
 
     UNIQUE(user_id, template_id, date)
   );
@@ -144,7 +164,7 @@ const createTables = async () => {
     FOREIGN KEY (exercise_id)
       REFERENCES Exercises(exercise_id)
       ON UPDATE CASCADE
-      ON DELETE CASCADE
+      ON DELETE RESTRICT
 
   );
 
@@ -154,8 +174,17 @@ const createTables = async () => {
   CREATE INDEX IF NOT EXISTS idx_groupmembers_group_id
     ON GroupMembers(group_id);
 
+  CREATE INDEX IF NOT EXISTS idx_groups_created_by_user_id
+    ON AccountabilityGroups(created_by_user_id);
+
   CREATE INDEX IF NOT EXISTS idx_workoutsessions_user_date
     ON WorkoutSessions(user_id, date);
+
+  CREATE INDEX IF NOT EXISTS idx_exercises_active_filters
+    ON Exercises(is_active, target_muscle, equipment_needed, difficulty);
+
+  CREATE INDEX IF NOT EXISTS idx_templates_generator_lookup
+    ON WorkoutTemplates(is_active, experience_level, workout_split);
   `;
 
   try {
@@ -194,10 +223,16 @@ const seedWorkoutTemplateTable = async () => {
   try {
     for (const template of workoutTemplates) {
       const insertQuery = {
-        text: "INSERT INTO workouttemplates (title) VALUES ($1)",
+        text: `INSERT INTO workouttemplates
+          (title, experience_level, workout_split)
+          VALUES ($1, $2, $3)`,
       };
 
-      const values = [template.title];
+      const values = [
+        template.title,
+        template.experience_level,
+        template.workout_split,
+      ];
 
       await pool.query(insertQuery, values);
     }
@@ -286,6 +321,10 @@ const seedTables = async () => {
   await seedAdmin();
   await seedExerciseTable();
   await seedWorkoutTemplateTable();
+
+  if (process.env.SEED_DEMO_DATA === "true") {
+    await seedDemoData();
+  }
 };
 
 seedTables()
