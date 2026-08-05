@@ -13,11 +13,15 @@ export const createToken = (userId, role = "member") => {
   });
 };
 
+const isProduction =
+  process.env.NODE_ENV?.trim() === "production" ||
+  process.env.RENDER === "true";
+
 export const setAuthCookie = (res, token) => {
   res.cookie("authToken", token, {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: isProduction ? "none" : "lax",
+    secure: isProduction,
     maxAge: SESSION_DURATION_MS,
   });
 };
