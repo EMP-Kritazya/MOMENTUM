@@ -260,7 +260,7 @@ async function createTemplateExercises(lastSessionId, userId, today) {
 
     await client.query("BEGIN");
 
-    const created = await pool.query(
+    const created = await client.query(
       `INSERT INTO workoutsessions
          (user_id, template_id, date, duration_minutes, completed)
        VALUES ($1, $2, $3, $4, FALSE)
@@ -268,7 +268,7 @@ async function createTemplateExercises(lastSessionId, userId, today) {
       [userId, templateId, today, 0],
     );
     const session = created.rows[0];
-    const sessionId = created.session_id;
+    const sessionId = session.session_id;
 
     const placeholders = [];
     const values = [];
@@ -362,6 +362,64 @@ export const getIndividualSession = async (req, res) => {
     res.status(200).json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/workoutsessions/:id/exercises
+// Returns the exact exercises generated for one of the signed-in user's sessions.
+export const getSessionExercises = async (req, res) => {
+  const userId = req.auth?.userId;
+  const sessionId = Number.parseInt(req.params.id, 10);
+
+  if (!Number.isInteger(sessionId) || sessionId < 1) {
+    return res.status(400).json({ message: "A valid session ID is required" });
+  }
+
+  try {
+    const sessionResult = await pool.query(
+      `SELECT ws.session_id,
+              ws.template_id,
+              ws.date,
+              ws.duration_minutes,
+              ws.started,
+              ws.completed,
+              wt.title
+         FROM workoutsessions ws
+         JOIN workouttemplates wt
+           ON wt.template_id = ws.template_id
+        WHERE ws.session_id = $1
+          AND ws.user_id = $2`,
+      [sessionId, userId],
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ message: "Workout session not found" });
+    }
+
+    const exercisesResult = await pool.query(
+      `SELECT wte.template_exercise_id,
+              e.exercise_id,
+              e.exercise_name,
+              e.target_muscle,
+              e.equipment_needed,
+              wte.sets,
+              wte.reps,
+              wte.exercise_order,
+              wte.completed
+         FROM workouttemplateexercises wte
+         JOIN exercises e
+           ON e.exercise_id = wte.exercise_id
+        WHERE wte.session_id = $1
+        ORDER BY wte.exercise_order ASC`,
+      [sessionId],
+    );
+
+    return res.status(200).json({
+      ...sessionResult.rows[0],
+      exercises: exercisesResult.rows,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 };
 

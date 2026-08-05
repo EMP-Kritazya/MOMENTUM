@@ -3,6 +3,7 @@ import { authenticateToken } from "../middleware/authenticateToken.js";
 import {
   getAllSessions,
   getIndividualSession,
+  getSessionExercises,
   createSession,
   updateSession,
   updateTemplateExercise,
@@ -21,6 +22,7 @@ router.get("/todayssession", todaysSession);
 router.get("/activity-summary", getUserActivitySummary);
 
 router.get("/", getAllSessions);
+router.get("/:id/exercises", getSessionExercises);
 router.get("/:id", getIndividualSession);
 router.post("/", createSession);
 router.patch("/updatesession", updateSession); // mark session started / completed here

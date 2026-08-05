@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
 
 export function PerSet({ sets, reps, onComplete }) {

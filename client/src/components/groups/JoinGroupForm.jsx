@@ -4,14 +4,6 @@ import { Users } from "lucide-react";
 export default function JoinGroupForm({ onJoin, isSubmitting }) {
   const [inviteCode, setInviteCode] = useState("");
 
-  function handlePaste(event) {
-    const pastedCode = event.clipboardData.getData("text");
-    if (!pastedCode) return;
-
-    event.preventDefault();
-    setInviteCode(pastedCode.trim().toUpperCase().slice(0, 12));
-  }
-
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -45,7 +37,6 @@ export default function JoinGroupForm({ onJoin, isSubmitting }) {
           onChange={(event) =>
             setInviteCode(event.target.value.toUpperCase())
           }
-          onPaste={handlePaste}
           placeholder="Invite code..."
           maxLength={12}
           autoCapitalize="characters"

@@ -17,8 +17,8 @@ export async function getWorkoutHistory(userId, filters, signal) {
   });
 }
 
-export async function getWorkoutTemplateDetails(templateId, signal) {
-  return apiRequest(`/api/workouttemplates/${templateId}/exercises`, {
+export async function getWorkoutSessionDetails(sessionId, signal) {
+  return apiRequest(`/api/workoutsessions/${sessionId}/exercises`, {
     signal,
   });
 }
