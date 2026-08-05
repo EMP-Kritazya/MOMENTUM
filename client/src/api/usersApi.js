@@ -9,12 +9,8 @@ export function createOnboardingUser(payload) {
 }
 
 // Gets the authenticated user's profile.
-export function getUserProfile(token) {
-  return apiRequest("/api/users/profile", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+export function getUserProfile() {
+  return apiRequest("/api/users/profile");
 }
 
 // Get user current workout Session

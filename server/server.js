@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.js";
+import { authenticateToken } from "./middleware/authenticateToken.js";
 import userRouter from "./routes/users.js";
 import progressRouter from "./routes/progressInsight.js";
 import { connectDB } from "./config/database.js";
@@ -28,6 +29,8 @@ app.use(
 app.use(express.json());
 // Parses the authToken cookie into req.cookies for authenticateToken.
 app.use(cookieParser());
+app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
+app.use("/api/progressInsight", authenticateToken, progressRouter);
 
 // Render uses this endpoint to confirm that the web service is responsive.
 app.get("/api/health", (req, res) => {

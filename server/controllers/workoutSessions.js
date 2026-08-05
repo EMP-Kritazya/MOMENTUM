@@ -225,15 +225,6 @@ async function createTemplateExercises(lastSessionId, userId, today) {
     );
     const templateId = response.rows[0].template_id;
 
-    const created = await pool.query(
-      `INSERT INTO workoutsessions
-         (user_id, template_id, date, duration_minutes, completed)
-       VALUES ($1, $2, $3, $4, FALSE)
-       RETURNING *`,
-      [userId, templateId, today, 0],
-    );
-    const sessionId = created.rows[0].session_id;
-
     // Translate preferences into exercise-table filters.
     const equipment = mapUserEquipment(equipment_available);
     const scheme = GOAL_SCHEME[fitness_goal] ?? DEFAULT_SCHEME;
@@ -268,6 +259,16 @@ async function createTemplateExercises(lastSessionId, userId, today) {
     }
 
     await client.query("BEGIN");
+
+    const created = await pool.query(
+      `INSERT INTO workoutsessions
+         (user_id, template_id, date, duration_minutes, completed)
+       VALUES ($1, $2, $3, $4, FALSE)
+       RETURNING *`,
+      [userId, templateId, today, 0],
+    );
+    const session = created.rows[0];
+    const sessionId = created.session_id;
 
     const placeholders = [];
     const values = [];
@@ -328,11 +329,7 @@ async function loadWorkoutPayload(session) {
     ),
   ]);
 
-  return {
-    session,
-    title: templateResult.rows[0]?.title ?? null,
-    exercises: exercisesResult.rows,
-  };
+  return session;
 }
 
 // GET /api/workoutsessions
@@ -405,7 +402,11 @@ export const todaysSession = async (req, res) => {
 
     // Deciding the split and difficulty band.
 
-    await createTemplateExercises(lastSessionId, userId, today);
+    const session = await createTemplateExercises(
+      lastSessionId,
+      userId,
+      today,
+    );
 
     return res.status(201).json(await loadWorkoutPayload(session));
   } catch (error) {

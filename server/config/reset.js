@@ -103,13 +103,13 @@ const createTables = async () => {
     current_streak INTEGER NOT NULL DEFAULT 0,
     UNIQUE(group_id, user_id)
   );
-  
-  
+
+
   CREATE TABLE IF NOT EXISTS WorkoutTemplates (
     template_id SERIAL PRIMARY KEY,
     title VARCHAR(100) NOT NULL
   );
-  
+
   CREATE TABLE IF NOT EXISTS WorkoutSessions (
     session_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -117,16 +117,14 @@ const createTables = async () => {
     date DATE NOT NULL,
     duration_minutes INT DEFAULT 0,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
-    FOREIGN KEY (user_id) 
+    FOREIGN KEY (user_id)
       REFERENCES Users(user_id)
-      ON DELETE CASCADE,
-    FOREIGN KEY (template_id) 
-      REFERENCES WorkoutTemplates(template_id)
       ON DELETE CASCADE,
     FOREIGN KEY (template_id)
       REFERENCES WorkoutTemplates(template_id)
-      ON UPDATE CASCADE,
-    
+      ON UPDATE CASCADE
+      ON DELETE CASCADE,
+
     UNIQUE(user_id, template_id, date)
   );
 
@@ -139,11 +137,13 @@ const createTables = async () => {
     exercise_order INT NOT NULL,
     FOREIGN KEY (session_id)
       REFERENCES WorkoutSessions(session_id)
-      ON UPDATE CASCADE,
-    FOREIGN KEY (exercise_id) 
-      REFERENCES Exercises(exercise_id) 
       ON UPDATE CASCADE
-    
+      ON DELETE CASCADE,
+    FOREIGN KEY (exercise_id)
+      REFERENCES Exercises(exercise_id)
+      ON UPDATE CASCADE
+      ON DELETE CASCADE
+
   );
 
   CREATE INDEX IF NOT EXISTS idx_groupmembers_user_id
@@ -161,6 +161,7 @@ const createTables = async () => {
     console.log("tables created successfully");
   } catch (error) {
     console.error("error creating tables", error);
+    throw error;
   }
 };
 
@@ -205,29 +206,29 @@ const seedWorkoutTemplateTable = async () => {
   }
 };
 
-const seedWorkoutTemplateExercisesTable = async () => {
-  try {
-    for (const workoutTemplateExercise of workoutTemplateExercises) {
-      const insertQuery = {
-        text: "INSERT INTO workouttemplateexercises (template_id, exercise_id, sets, reps, exercise_order) VALUES ($1, $2, $3, $4, $5)",
-      };
+// const seedWorkoutTemplateExercisesTable = async () => {
+//   try {
+//     for (const workoutTemplateExercise of workoutTemplateExercises) {
+//       const insertQuery = {
+//         text: "INSERT INTO workouttemplateexercises (template_id, exercise_id, sets, reps, exercise_order) VALUES ($1, $2, $3, $4, $5)",
+//       };
 
-      const values = [
-        workoutTemplateExercise.template_id,
-        workoutTemplateExercise.exercise_id,
-        workoutTemplateExercise.sets,
-        workoutTemplateExercise.reps,
-        workoutTemplateExercise.exercise_order,
-      ];
+//       const values = [
+//         workoutTemplateExercise.template_id,
+//         workoutTemplateExercise.exercise_id,
+//         workoutTemplateExercise.sets,
+//         workoutTemplateExercise.reps,
+//         workoutTemplateExercise.exercise_order,
+//       ];
 
-      await pool.query(insertQuery, values);
-    }
-    console.log(`✅ WorkoutTemplateExercises added successfully`);
-  } catch (error) {
-    console.error("⚠️ Error seeding WorkoutTemplateExercises:", error.message);
-    return;
-  }
-};
+//       await pool.query(insertQuery, values);
+//     }
+//     console.log(`✅ WorkoutTemplateExercises added successfully`);
+//   } catch (error) {
+//     console.error("⚠️ Error seeding WorkoutTemplateExercises:", error.message);
+//     return;
+//   }
+// };
 
 const seedAdmin = async () => {
   try {
@@ -285,4 +286,11 @@ const seedTables = async () => {
   await seedWorkoutTemplateTable();
 };
 
-seedTables();
+seedTables()
+  .catch((error) => {
+    console.error("Unable to reset database:", error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await pool.end();
+  });
