@@ -15,9 +15,14 @@ import groupRouter from "./routes/groups.js";
 // create express app
 const app = express();
 
-const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
-  Boolean,
-);
+// const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
+//   Boolean,
+// );
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://momentum-av8u.onrender.com",
+  process.env.CLIENT_URL,
+].filter(Boolean);
 
 app.use(
   cors({

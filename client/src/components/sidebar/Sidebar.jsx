@@ -1,5 +1,14 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { Home, Calendar, Users, BookOpen, Flame, LogOut } from "lucide-react";
+import {
+  Home,
+  Calendar,
+  Users,
+  BookOpen,
+  Flame,
+  LogOut,
+  Settings,
+} from "lucide-react";
+import { useEffect } from "react";
 import { useAuth } from "../../context/authContext.js";
 
 const navItems = [
@@ -9,13 +18,19 @@ const navItems = [
   { to: "/library", label: "Exercises", icon: BookOpen },
 ];
 
+const adminNavItem = {
+  to: "/admin/templates",
+  label: "Manage Templates",
+  icon: Settings,
+};
+
 export default function Sidebar() {
   const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
 
-  if (!user) {
-    navigate("/");
-  }
+  useEffect(() => {
+    if (!loading && !user) navigate("/", { replace: true });
+  }, [loading, navigate, user]);
 
   const firstName = user?.first_name ?? "";
   const lastName = user?.last_name ?? "";
@@ -25,6 +40,7 @@ export default function Sidebar() {
     `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() ||
     displayName.slice(0, 2).toUpperCase();
   const isAdmin = user?.role === "admin";
+  const visibleNavItems = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   async function handleLogout() {
     await logout();
@@ -47,7 +63,7 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map(({ to, label, icon: Icon, end }) => (
+        {visibleNavItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
