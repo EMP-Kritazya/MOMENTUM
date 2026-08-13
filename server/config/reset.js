@@ -4,6 +4,7 @@ import exercises from "../data/exercise.js";
 import workoutTemplates from "../data/workoutTemplates.js";
 import workoutTemplateExercises from "../data/workoutTemplateExercises.js";
 import bcrypt from "bcryptjs";
+import { seedDemoData } from "./demoSeeder.js";
 
 // Reads the initial administrator details from environment variables.
 const {
@@ -72,9 +73,13 @@ const createTables = async () => {
   CREATE TABLE IF NOT EXISTS Exercises (
     exercise_id SERIAL PRIMARY KEY,
     exercise_name VARCHAR(100) NOT NULL,
-    target_muscle VARCHAR(50),
-    equipment_needed VARCHAR(50),
-    difficulty VARCHAR(30)
+    target_muscle VARCHAR(50) NOT NULL,
+    equipment_needed VARCHAR(50) NOT NULL,
+    difficulty VARCHAR(30) NOT NULL
+      CHECK (difficulty IN ('beginner', 'intermediate', 'expert')),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE TABLE IF NOT EXISTS AccountabilityGroups (
@@ -82,7 +87,9 @@ const createTables = async () => {
     group_name VARCHAR(100) NOT NULL,
     description TEXT,
     invite_code VARCHAR(12) NOT NULL UNIQUE,
-    created_by_user_id INTEGER REFERENCES Users(user_id),
+    created_by_user_id INTEGER NOT NULL
+      REFERENCES Users(user_id)
+      ON DELETE CASCADE,
     current_streak INTEGER DEFAULT 0
   );
 
@@ -103,13 +110,26 @@ const createTables = async () => {
     current_streak INTEGER NOT NULL DEFAULT 0,
     UNIQUE(group_id, user_id)
   );
-  
-  
+
+
   CREATE TABLE IF NOT EXISTS WorkoutTemplates (
     template_id SERIAL PRIMARY KEY,
-    title VARCHAR(100) NOT NULL
+    title VARCHAR(100) NOT NULL,
+    experience_level VARCHAR(30) NOT NULL
+      CHECK (experience_level IN (
+        'beginner',
+        'some_experience',
+        'intermediate',
+        'advanced'
+      )),
+    workout_split VARCHAR(10) NOT NULL
+      CHECK (workout_split IN ('upper', 'lower', 'full')),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (experience_level, workout_split)
   );
-  
+
   CREATE TABLE IF NOT EXISTS WorkoutSessions (
     session_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -118,16 +138,14 @@ const createTables = async () => {
     duration_minutes INT DEFAULT 0,
     started BOOLEAN NOT NULL DEFAULT FALSE,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
-    FOREIGN KEY (user_id) 
+    FOREIGN KEY (user_id)
       REFERENCES Users(user_id)
-      ON DELETE CASCADE,
-    FOREIGN KEY (template_id) 
-      REFERENCES WorkoutTemplates(template_id)
       ON DELETE CASCADE,
     FOREIGN KEY (template_id)
       REFERENCES WorkoutTemplates(template_id)
-      ON UPDATE CASCADE,
-    
+      ON UPDATE CASCADE
+      ON DELETE RESTRICT,
+
     UNIQUE(user_id, template_id, date)
   );
 
@@ -141,11 +159,13 @@ const createTables = async () => {
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (session_id)
       REFERENCES WorkoutSessions(session_id)
-      ON UPDATE CASCADE,
-    FOREIGN KEY (exercise_id) 
-      REFERENCES Exercises(exercise_id) 
       ON UPDATE CASCADE
-    
+      ON DELETE CASCADE,
+    FOREIGN KEY (exercise_id)
+      REFERENCES Exercises(exercise_id)
+      ON UPDATE CASCADE
+      ON DELETE RESTRICT
+
   );
 
   CREATE INDEX IF NOT EXISTS idx_groupmembers_user_id
@@ -154,8 +174,17 @@ const createTables = async () => {
   CREATE INDEX IF NOT EXISTS idx_groupmembers_group_id
     ON GroupMembers(group_id);
 
+  CREATE INDEX IF NOT EXISTS idx_groups_created_by_user_id
+    ON AccountabilityGroups(created_by_user_id);
+
   CREATE INDEX IF NOT EXISTS idx_workoutsessions_user_date
     ON WorkoutSessions(user_id, date);
+
+  CREATE INDEX IF NOT EXISTS idx_exercises_active_filters
+    ON Exercises(is_active, target_muscle, equipment_needed, difficulty);
+
+  CREATE INDEX IF NOT EXISTS idx_templates_generator_lookup
+    ON WorkoutTemplates(is_active, experience_level, workout_split);
   `;
 
   try {
@@ -163,6 +192,7 @@ const createTables = async () => {
     console.log("tables created successfully");
   } catch (error) {
     console.error("error creating tables", error);
+    throw error;
   }
 };
 
@@ -193,10 +223,16 @@ const seedWorkoutTemplateTable = async () => {
   try {
     for (const template of workoutTemplates) {
       const insertQuery = {
-        text: "INSERT INTO workouttemplates (title) VALUES ($1)",
+        text: `INSERT INTO workouttemplates
+          (title, experience_level, workout_split)
+          VALUES ($1, $2, $3)`,
       };
 
-      const values = [template.title];
+      const values = [
+        template.title,
+        template.experience_level,
+        template.workout_split,
+      ];
 
       await pool.query(insertQuery, values);
     }
@@ -207,29 +243,29 @@ const seedWorkoutTemplateTable = async () => {
   }
 };
 
-const seedWorkoutTemplateExercisesTable = async () => {
-  try {
-    for (const workoutTemplateExercise of workoutTemplateExercises) {
-      const insertQuery = {
-        text: "INSERT INTO workouttemplateexercises (template_id, exercise_id, sets, reps, exercise_order) VALUES ($1, $2, $3, $4, $5)",
-      };
+// const seedWorkoutTemplateExercisesTable = async () => {
+//   try {
+//     for (const workoutTemplateExercise of workoutTemplateExercises) {
+//       const insertQuery = {
+//         text: "INSERT INTO workouttemplateexercises (template_id, exercise_id, sets, reps, exercise_order) VALUES ($1, $2, $3, $4, $5)",
+//       };
 
-      const values = [
-        workoutTemplateExercise.template_id,
-        workoutTemplateExercise.exercise_id,
-        workoutTemplateExercise.sets,
-        workoutTemplateExercise.reps,
-        workoutTemplateExercise.exercise_order,
-      ];
+//       const values = [
+//         workoutTemplateExercise.template_id,
+//         workoutTemplateExercise.exercise_id,
+//         workoutTemplateExercise.sets,
+//         workoutTemplateExercise.reps,
+//         workoutTemplateExercise.exercise_order,
+//       ];
 
-      await pool.query(insertQuery, values);
-    }
-    console.log(`✅ WorkoutTemplateExercises added successfully`);
-  } catch (error) {
-    console.error("⚠️ Error seeding WorkoutTemplateExercises:", error.message);
-    return;
-  }
-};
+//       await pool.query(insertQuery, values);
+//     }
+//     console.log(`✅ WorkoutTemplateExercises added successfully`);
+//   } catch (error) {
+//     console.error("⚠️ Error seeding WorkoutTemplateExercises:", error.message);
+//     return;
+//   }
+// };
 
 const seedAdmin = async () => {
   try {
@@ -285,6 +321,17 @@ const seedTables = async () => {
   await seedAdmin();
   await seedExerciseTable();
   await seedWorkoutTemplateTable();
+
+  if (process.env.SEED_DEMO_DATA === "true") {
+    await seedDemoData();
+  }
 };
 
-seedTables();
+seedTables()
+  .catch((error) => {
+    console.error("Unable to reset database:", error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await pool.end();
+  });

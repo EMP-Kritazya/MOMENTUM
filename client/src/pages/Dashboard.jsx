@@ -16,7 +16,7 @@ import { useAuth } from "../context/authContext";
 // } from "../data/dashboardData";
 
 export default function Dashboard() {
-  const { user, loading, logout } = useAuth();
+  const { user } = useAuth();
 
   const displayName = user?.username ?? "";
   const current_streak = user?.current_streak ?? "";

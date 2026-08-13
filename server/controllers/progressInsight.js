@@ -24,6 +24,15 @@ function pickRandom(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
+// Maps a user's current streak to a headline category. Pulled out of the
+// controller so the decision logic can be unit tested without a database.
+export function selectHeadlineCategory(currentStreak) {
+  if (currentStreak > 0 && currentStreak % 7 === 0) return "weeklyAchievement";
+  if (currentStreak === 1) return "firstStreak";
+  if (currentStreak === 0) return "dayOne";
+  return "streak";
+}
+
 export const myProgressInsight = async (req, res) => {
   const userId = req.auth?.userId;
   if (!userId) {
@@ -43,17 +52,8 @@ export const myProgressInsight = async (req, res) => {
     }
 
     const current_streak = user.rows[0].current_streak;
-
-    let holder = "";
-    if (current_streak > 0 && current_streak % 7 === 0) {
-      holder = pickRandom(headlines.weeklyAchievement);
-    } else if (current_streak === 1) {
-      holder = pickRandom(headlines.firstStreak);
-    } else if (current_streak === 0) {
-      holder = pickRandom(headlines.dayOne);
-    } else {
-      holder = pickRandom(headlines.streak);
-    }
+    const category = selectHeadlineCategory(current_streak);
+    const holder = pickRandom(headlines[category]);
 
     return res.status(200).json({ headline: holder });
   } catch (error) {

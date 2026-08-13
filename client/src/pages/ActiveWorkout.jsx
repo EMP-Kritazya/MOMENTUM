@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { CardShell } from "../components/dashboard/CardShell";
 import { useNavigate } from "react-router-dom";
-import { toTodayWorkout } from "../components/dashboard/TodaysWorkoutCard";
+import { toTodayWorkout } from "../utils/toTodayWorkout";
 import { getUserWorkout, updateExerciseCompletion } from "../api/usersApi";
 import { CurrentExerciseCard } from "../components/activeWorkout/CurrentExerciseCard";
 import { CurrentExerciseHeader } from "../components/activeWorkout/CurrentExerciseHeader";
@@ -73,6 +73,16 @@ export default function ActiveWorkout() {
       active = false;
     };
   }, []);
+
+  // Treats the focused workout runner like a modal: Escape exits to Dashboard.
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === "Escape") navigate("/dashboard");
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [navigate]);
 
   const handleExerciseComplete = async (templateExerciseId) => {
     try {
@@ -151,12 +161,7 @@ export default function ActiveWorkout() {
   }
 
   const {
-    label,
     title,
-    difficulty,
-    durationMin,
-    calories,
-    targetMuscles,
     started,
     completed,
   } = workout;
@@ -171,6 +176,10 @@ export default function ActiveWorkout() {
   const allExercisesCompleted =
     exerciseQueue.length > 0 &&
     completedExercises.length === exerciseQueue.length;
+  const progressPercent =
+    exerciseQueue.length > 0
+      ? Math.round((completedExercises.length / exerciseQueue.length) * 100)
+      : 0;
 
   // currExercise is only null once every exercise has been completed
   // (see handleExerciseComplete, which advances currentIndex past the end).
@@ -225,9 +234,18 @@ export default function ActiveWorkout() {
           onExit={() => navigate("/dashboard")}
         />
         {/* ── Overall progress bar ───────────────────────────────────────── */}
-        <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/5">
-          {/* TODO: width bound to completion % */}
-          <div className="h-full w-1/5 rounded-full bg-momentum-lime" />
+        <div
+          className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/5"
+          role="progressbar"
+          aria-label="Workout progress"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progressPercent}
+        >
+          <div
+            className="h-full rounded-full bg-momentum-lime transition-[width] duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
 
         <CurrentExerciseCard

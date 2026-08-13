@@ -12,14 +12,13 @@ export async function getWorkoutHistory(userId, filters, signal) {
     params.set("muscle", filters.muscle);
   }
 
-  return apiRequest(
-    `/api/workoutsessions/user/${userId}/history?${params}`,
-    { signal },
-  );
+  return apiRequest(`/api/workoutsessions/user/${userId}/history?${params}`, {
+    signal,
+  });
 }
 
-export async function getWorkoutTemplateDetails(templateId, signal) {
-  return apiRequest(`/api/workouttemplates/${templateId}/exercises`, {
+export async function getWorkoutSessionDetails(sessionId, signal) {
+  return apiRequest(`/api/workoutsessions/${sessionId}/exercises`, {
     signal,
   });
 }

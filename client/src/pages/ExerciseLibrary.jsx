@@ -1,175 +1,383 @@
-import { useState, useEffect } from "react";
-import { Search, Dumbbell, BookOpen, Loader2, AlertCircle } from "lucide-react";
-import { getExercises } from "../api/exerciseApi";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Archive,
+  BookOpen,
+  Dumbbell,
+  Loader2,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Search,
+  Trash2,
+} from "lucide-react";
+import {
+  createExercise,
+  deleteExercise,
+  getAdminExercises,
+  getExercises,
+  updateExercise,
+} from "../api/exerciseApi.js";
+import ExerciseFormModal from "../components/admin/ExerciseFormModal.jsx";
+import ActionToast from "../components/ui/ActionToast.jsx";
+import { useAuth } from "../context/authContext.js";
 
-function capitalize(str) {
-  return str ? str.charAt(0).toUpperCase() + str.slice(1) : str;
+function capitalize(value) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 }
 
 export default function ExerciseLibrary() {
+  const { user, loading: authLoading } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [searchQuery, setSearchQuery] = useState("");
   const [muscleFilter, setMuscleFilter] = useState("All");
   const [diffFilter, setDiffFilter] = useState("All");
-
+  const [showArchived, setShowArchived] = useState(false);
   const [exercises, setExercises] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingExercise, setEditingExercise] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [busyExerciseId, setBusyExerciseId] = useState(null);
+  const [toast, setToast] = useState("");
+
+  const closeToast = useCallback(() => setToast(""), []);
+
+  const loadExercises = useCallback(async () => {
+    if (authLoading) return;
+
+    setIsLoading(true);
+    setError("");
+    try {
+      const data = isAdmin
+        ? await getAdminExercises({ includeInactive: true })
+        : await getExercises();
+
+      setExercises(
+        data.map((exercise) => ({
+          id: exercise.exercise_id,
+          name: exercise.exercise_name,
+          muscle: exercise.target_muscle,
+          equipment: exercise.equipment_needed,
+          difficulty: capitalize(exercise.difficulty),
+          isActive: exercise.is_active !== false,
+        })),
+      );
+    } catch (requestError) {
+      setError(requestError.message || "Failed to load exercises.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [authLoading, isAdmin]);
 
   useEffect(() => {
-    let cancelled = false;
+    loadExercises();
+  }, [loadExercises]);
 
-    async function fetchExercises() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getExercises();
-        if (cancelled) return;
+  const muscleGroups = [
+    "All",
+    ...new Set(exercises.map((exercise) => exercise.muscle)),
+  ];
+  const difficultyLevels = [
+    "All",
+    ...new Set(exercises.map((exercise) => exercise.difficulty)),
+  ];
 
-        const mapped = data.map((e) => ({
-          id: e.exercise_id,
-          name: e.exercise_name,
-          muscle: e.target_muscle,
-          equipment: e.equipment_needed,
-          difficulty: capitalize(e.difficulty),
-        }));
-
-        setExercises(mapped);
-      } catch (err) {
-        if (!cancelled) setError(err.message || "Failed to load exercises.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-
-    fetchExercises();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const muscleGroups = ["All", ...new Set(exercises.map((e) => e.muscle))];
-  const difficultyLevels = ["All", ...new Set(exercises.map((e) => e.difficulty))];
-
-  const items = exercises.filter((e) => {
-    const matchSearch =
-      e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.muscle.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchMuscle = muscleFilter === "All" || e.muscle === muscleFilter;
-    const matchDiff = diffFilter === "All" || e.difficulty === diffFilter;
-    return matchSearch && matchMuscle && matchDiff;
+  const items = exercises.filter((exercise) => {
+    const query = searchQuery.toLowerCase();
+    const matchesSearch =
+      exercise.name.toLowerCase().includes(query) ||
+      exercise.muscle.toLowerCase().includes(query) ||
+      exercise.equipment.toLowerCase().includes(query);
+    const matchesMuscle =
+      muscleFilter === "All" || exercise.muscle === muscleFilter;
+    const matchesDifficulty =
+      diffFilter === "All" || exercise.difficulty === diffFilter;
+    const matchesArchive =
+      !isAdmin || showArchived || exercise.isActive;
+    return (
+      matchesSearch &&
+      matchesMuscle &&
+      matchesDifficulty &&
+      matchesArchive
+    );
   });
 
-  return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold" style={{ fontFamily: "'Fraunces', serif" }}>
-          Exercise Library
-        </h1>
-        <p className="text-muted-foreground mt-1.5">
-          Browse exercises by muscle group, difficulty, and equipment.
-        </p>
-      </div>
+  function openCreateForm() {
+    setEditingExercise(null);
+    setFormErrors({});
+    setFormOpen(true);
+  }
 
-      {/* Search */}
+  function openEditForm(exercise) {
+    setEditingExercise(exercise);
+    setFormErrors({});
+    setFormOpen(true);
+  }
+
+  async function handleSaveExercise(values) {
+    if (isSaving) return;
+    setIsSaving(true);
+    setFormErrors({});
+    setError("");
+
+    try {
+      if (editingExercise) {
+        await updateExercise(editingExercise.id, values);
+        setToast("Exercise updated");
+      } else {
+        await createExercise(values);
+        setToast("Exercise created");
+      }
+      setFormOpen(false);
+      setEditingExercise(null);
+      await loadExercises();
+    } catch (requestError) {
+      setFormErrors({
+        ...(requestError.data?.errors ?? {}),
+        ...(!requestError.data?.errors
+          ? { form: requestError.message }
+          : {}),
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleToggleExercise(exercise) {
+    const action = exercise.isActive ? "archive" : "restore";
+    if (!window.confirm(`${capitalize(action)} ${exercise.name}?`)) return;
+
+    setBusyExerciseId(exercise.id);
+    setError("");
+    try {
+      await updateExercise(exercise.id, {
+        is_active: !exercise.isActive,
+      });
+      setToast(`Exercise ${exercise.isActive ? "archived" : "restored"}`);
+      await loadExercises();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusyExerciseId(null);
+    }
+  }
+
+  async function handleDeleteExercise(exercise) {
+    if (!window.confirm(`Permanently delete ${exercise.name}?`)) return;
+
+    setBusyExerciseId(exercise.id);
+    setError("");
+    try {
+      await deleteExercise(exercise.id);
+      setToast("Exercise deleted");
+      await loadExercises();
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setBusyExerciseId(null);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl p-8">
+      <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="font-display text-4xl font-bold">Exercise Library</h1>
+          <p className="mt-1.5 text-momentum-muted">
+            Browse exercises by muscle group, difficulty, and equipment.
+          </p>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={openCreateForm}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-momentum-lime px-5 font-bold text-[#11130d]"
+          >
+            <Plus size={18} aria-hidden="true" />
+            Add Exercise
+          </button>
+        )}
+      </header>
+
       <div className="relative mb-4">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          size={15}
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-momentum-muted"
+          aria-hidden="true"
+        />
         <input
-          type="text"
-          placeholder="Search exercises or muscle groups..."
+          type="search"
+          placeholder="Search exercises, muscles, or equipment..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-card border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground"
+          onChange={(event) => setSearchQuery(event.target.value)}
+          className="w-full rounded-xl border border-momentum-border bg-momentum-panel py-2.5 pl-10 pr-4 text-sm text-white outline-none placeholder:text-momentum-muted focus:ring-2 focus:ring-momentum-lime"
         />
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <span className="text-xs text-muted-foreground mr-1">Muscle:</span>
-        {muscleGroups.map((m) => (
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-xs text-momentum-muted">Muscle:</span>
+        {muscleGroups.map((muscle) => (
           <button
-            key={m}
-            onClick={() => setMuscleFilter(m)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              muscleFilter === m
-                ? "bg-primary text-primary-foreground"
-                : "bg-card border border-border text-muted-foreground hover:text-foreground"
+            key={muscle}
+            type="button"
+            onClick={() => setMuscleFilter(muscle)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              muscleFilter === muscle
+                ? "bg-momentum-lime text-[#11130d]"
+                : "border border-momentum-border bg-momentum-panel text-momentum-muted hover:text-white"
             }`}
           >
-            {m}
+            {muscle}
           </button>
         ))}
-        <span className="text-xs text-muted-foreground ml-3 mr-1">Level:</span>
-        {difficultyLevels.map((d) => (
+
+        <span className="ml-3 mr-1 text-xs text-momentum-muted">Level:</span>
+        {difficultyLevels.map((difficulty) => (
           <button
-            key={d}
-            onClick={() => setDiffFilter(d)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              diffFilter === d
-                ? "bg-primary text-primary-foreground"
-                : "bg-card border border-border text-muted-foreground hover:text-foreground"
+            key={difficulty}
+            type="button"
+            onClick={() => setDiffFilter(difficulty)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              diffFilter === difficulty
+                ? "bg-momentum-lime text-[#11130d]"
+                : "border border-momentum-border bg-momentum-panel text-momentum-muted hover:text-white"
             }`}
           >
-            {d}
+            {difficulty}
           </button>
         ))}
+
+        {isAdmin && (
+          <label className="ml-auto flex items-center gap-2 text-xs text-momentum-muted">
+            <input
+              type="checkbox"
+              checked={showArchived}
+              onChange={(event) => setShowArchived(event.target.checked)}
+              className="accent-momentum-lime"
+            />
+            Show archived
+          </label>
+        )}
       </div>
 
-      {/* Content */}
+      {error && (
+        <p
+          role="alert"
+          className="mb-6 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-red-300"
+        >
+          {error}
+        </p>
+      )}
+
       {isLoading ? (
-        <div className="text-center py-20 text-muted-foreground">
+        <div className="py-20 text-center text-momentum-muted">
           <Loader2 size={28} className="mx-auto mb-3 animate-spin opacity-50" />
           <p className="font-medium">Loading exercises...</p>
         </div>
-      ) : error ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <AlertCircle size={32} className="mx-auto mb-3 text-red-400" />
-          <p className="font-medium text-red-400">Couldn't load exercises</p>
-          <p className="text-sm mt-1 opacity-60">{error}</p>
-        </div>
       ) : items.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4">
-          {items.map((ex) => (
-            <div
-              key={ex.id}
-              className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-all cursor-pointer group"
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((exercise) => (
+            <article
+              key={exercise.id}
+              className={`rounded-xl border bg-momentum-panel p-4 transition-all ${
+                exercise.isActive
+                  ? "border-momentum-border hover:border-momentum-lime/30"
+                  : "border-amber-500/30 opacity-70"
+              }`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Dumbbell size={18} className="text-primary" />
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-momentum-lime/10">
+                  <Dumbbell size={18} className="text-momentum-lime" />
                 </div>
-                <span
-                  className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    ex.difficulty === "Beginner"
-                      ? "bg-green-500/10 text-green-400"
-                      : ex.difficulty === "Intermediate"
-                      ? "bg-orange-500/10 text-orange-400"
-                      : "bg-red-500/10 text-red-400"
-                  }`}
-                >
-                  {ex.difficulty}
+                <div className="flex items-center gap-2">
+                  {!exercise.isActive && (
+                    <span className="rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-300">
+                      Archived
+                    </span>
+                  )}
+                  <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-momentum-muted">
+                    {exercise.difficulty}
+                  </span>
+                </div>
+              </div>
+
+              <h2 className="text-sm font-semibold text-white">
+                {exercise.name}
+              </h2>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-momentum-muted">
+                  {exercise.muscle}
+                </span>
+                <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-momentum-muted">
+                  {exercise.equipment}
                 </span>
               </div>
-              <h4 className="font-semibold text-sm mb-2 group-hover:text-primary transition-colors">
-                {ex.name}
-              </h4>
-              <div className="flex gap-1.5 flex-wrap">
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                  {ex.muscle}
-                </span>
-                <span className="text-xs text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-                  {ex.equipment}
-                </span>
-              </div>
-            </div>
+
+              {isAdmin && (
+                <div className="mt-4 flex items-center gap-2 border-t border-momentum-border pt-3">
+                  <button
+                    type="button"
+                    onClick={() => openEditForm(exercise)}
+                    disabled={busyExerciseId === exercise.id}
+                    className="rounded-lg border border-momentum-border p-2 text-momentum-muted hover:text-white disabled:opacity-50"
+                    aria-label={`Edit ${exercise.name}`}
+                  >
+                    <Pencil size={15} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleExercise(exercise)}
+                    disabled={busyExerciseId === exercise.id}
+                    className="rounded-lg border border-momentum-border p-2 text-momentum-muted hover:text-white disabled:opacity-50"
+                    aria-label={`${exercise.isActive ? "Archive" : "Restore"} ${exercise.name}`}
+                  >
+                    {exercise.isActive ? (
+                      <Archive size={15} aria-hidden="true" />
+                    ) : (
+                      <RotateCcw size={15} aria-hidden="true" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteExercise(exercise)}
+                    disabled={busyExerciseId === exercise.id}
+                    className="ml-auto rounded-lg border border-red-500/30 p-2 text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                    aria-label={`Delete ${exercise.name}`}
+                  >
+                    <Trash2 size={15} aria-hidden="true" />
+                  </button>
+                </div>
+              )}
+            </article>
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 text-muted-foreground">
+        <div className="py-20 text-center text-momentum-muted">
           <BookOpen size={36} className="mx-auto mb-3 opacity-30" />
           <p className="font-medium">No exercises match your filters.</p>
-          <p className="text-sm mt-1 opacity-60">Try adjusting the filters above.</p>
+          <p className="mt-1 text-sm opacity-60">
+            Try adjusting the filters above.
+          </p>
         </div>
       )}
+
+      <ExerciseFormModal
+        open={formOpen}
+        exercise={editingExercise}
+        errors={formErrors}
+        isSubmitting={isSaving}
+        onClose={() => {
+          if (!isSaving) {
+            setFormOpen(false);
+            setEditingExercise(null);
+            setFormErrors({});
+          }
+        }}
+        onSubmit={handleSaveExercise}
+      />
+      <ActionToast message={toast} onClose={closeToast} />
     </div>
   );
 }

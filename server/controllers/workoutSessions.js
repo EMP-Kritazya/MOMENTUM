@@ -62,19 +62,7 @@ const GOAL_SCHEME = {
 
 const DEFAULT_SCHEME = { sets: 3, reps: 10 };
 
-const DIFFICULTY_LABEL = {
-  beginner: "Beginner",
-  some_experience: "Beginner",
-  intermediate: "Intermediate",
-  advanced: "Advance",
-};
-const SPLIT_LABEL = {
-  upper: "Upper Body",
-  lower: "Lower Body",
-  full: "Full Body",
-};
-
-function classifySplit(muscles) {
+export function classifySplit(muscles) {
   const hasUpper = muscles.some((m) => UPPER_MUSCLES.has(m));
   const hasLower = muscles.some((m) => LOWER_MUSCLES.has(m));
   if (hasUpper && hasLower) return "full";
@@ -84,7 +72,7 @@ function classifySplit(muscles) {
 
 // equipment_available is stored as a VARCHAR, so pg hands it back as a string
 // like "{dumbbells,none}". Accept and Normalize
-function parseUserEquipment(raw) {
+export function parseUserEquipment(raw) {
   if (Array.isArray(raw)) return raw;
   if (typeof raw !== "string") return [];
   const trimmed = raw.trim();
@@ -98,7 +86,7 @@ function parseUserEquipment(raw) {
     .filter(Boolean);
 }
 
-function mapUserEquipment(raw) {
+export function mapUserEquipment(raw) {
   const allowed = new Set(["body only"]);
   for (const option of parseUserEquipment(raw)) {
     for (const value of EQUIPMENT_MAP[option] ?? []) {
@@ -108,12 +96,7 @@ function mapUserEquipment(raw) {
   return [...allowed];
 }
 
-function buildTitle(experienceLevel, split) {
-  const level = DIFFICULTY_LABEL[experienceLevel] ?? "Beginner";
-  return `${level} ${SPLIT_LABEL[split]}`;
-}
-
-function shuffle(list) {
+export function shuffle(list) {
   const copy = [...list];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -132,8 +115,9 @@ async function queryCandidates(
 ) {
   const result = await client.query(
     `SELECT exercise_id, exercise_name, target_muscle, difficulty
-       FROM exercises
-      WHERE target_muscle = ANY($1)
+      FROM exercises
+      WHERE is_active = TRUE
+        AND target_muscle = ANY($1)
         AND equipment_needed = ANY($2)
         AND difficulty = ANY($3)
         AND ($4::int[] = '{}' OR exercise_id <> ALL($4))`,
@@ -142,7 +126,7 @@ async function queryCandidates(
   return result.rows;
 }
 
-function fillSlots(candidates, slots) {
+export function fillSlots(candidates, slots) {
   const pools = new Map();
   for (const exercise of candidates) {
     if (!pools.has(exercise.target_muscle)) {
@@ -217,23 +201,32 @@ async function createTemplateExercises(lastSessionId, userId, today) {
     const { experience_level, fitness_goal, equipment_available } =
       context.rows[0];
 
-    difficulties = EXPERIENCE_DIFFICULTY[experience_level] ?? ["beginner"];
-    const template_name = buildTitle(experience_level, split);
-    const response = await client.query(
-      `SELECT template_id FROM workouttemplates where title = $1`,
-      [template_name],
-    );
-    const templateId = response.rows[0].template_id;
+    // Seeded administrators do not complete onboarding, so their fitness
+    // preferences may be null. Use the beginner configuration as a safe
+    // generator fallback while preserving every supported member selection.
+    const effectiveExperienceLevel = Object.hasOwn(
+      EXPERIENCE_DIFFICULTY,
+      experience_level,
+    )
+      ? experience_level
+      : "beginner";
 
-    const created = await pool.query(
-      `INSERT INTO workoutsessions
-         (user_id, template_id, date, duration_minutes, completed)
-       VALUES ($1, $2, $3, $4, FALSE)
-       RETURNING *`,
-      [userId, templateId, today, 0],
+    difficulties = EXPERIENCE_DIFFICULTY[effectiveExperienceLevel];
+    const templateResult = await client.query(
+      `SELECT template_id
+         FROM workouttemplates
+        WHERE experience_level = $1
+          AND workout_split = $2
+          AND is_active = TRUE
+        LIMIT 1`,
+      [effectiveExperienceLevel, split],
     );
-    const session = created.rows[0];
-    const sessionId = session.session_id;
+    if (templateResult.rows.length === 0) {
+      throw new Error(
+        `No active ${effectiveExperienceLevel} ${split} workout template is available`,
+      );
+    }
+    const templateId = templateResult.rows[0].template_id;
 
     // Translate preferences into exercise-table filters.
     const equipment = mapUserEquipment(equipment_available);
@@ -269,6 +262,16 @@ async function createTemplateExercises(lastSessionId, userId, today) {
     }
 
     await client.query("BEGIN");
+
+    const created = await client.query(
+      `INSERT INTO workoutsessions
+         (user_id, template_id, date, duration_minutes, completed)
+       VALUES ($1, $2, $3, $4, FALSE)
+       RETURNING *`,
+      [userId, templateId, today, 0],
+    );
+    const session = created.rows[0];
+    const sessionId = session.session_id;
 
     const placeholders = [];
     const values = [];
@@ -362,6 +365,64 @@ export const getIndividualSession = async (req, res) => {
     res.status(200).json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// GET /api/workoutsessions/:id/exercises
+// Returns the exact exercises generated for one of the signed-in user's sessions.
+export const getSessionExercises = async (req, res) => {
+  const userId = req.auth?.userId;
+  const sessionId = Number.parseInt(req.params.id, 10);
+
+  if (!Number.isInteger(sessionId) || sessionId < 1) {
+    return res.status(400).json({ message: "A valid session ID is required" });
+  }
+
+  try {
+    const sessionResult = await pool.query(
+      `SELECT ws.session_id,
+              ws.template_id,
+              ws.date,
+              ws.duration_minutes,
+              ws.started,
+              ws.completed,
+              wt.title
+         FROM workoutsessions ws
+         JOIN workouttemplates wt
+           ON wt.template_id = ws.template_id
+        WHERE ws.session_id = $1
+          AND ws.user_id = $2`,
+      [sessionId, userId],
+    );
+
+    if (sessionResult.rows.length === 0) {
+      return res.status(404).json({ message: "Workout session not found" });
+    }
+
+    const exercisesResult = await pool.query(
+      `SELECT wte.template_exercise_id,
+              e.exercise_id,
+              e.exercise_name,
+              e.target_muscle,
+              e.equipment_needed,
+              wte.sets,
+              wte.reps,
+              wte.exercise_order,
+              wte.completed
+         FROM workouttemplateexercises wte
+         JOIN exercises e
+           ON e.exercise_id = wte.exercise_id
+        WHERE wte.session_id = $1
+        ORDER BY wte.exercise_order ASC`,
+      [sessionId],
+    );
+
+    return res.status(200).json({
+      ...sessionResult.rows[0],
+      exercises: exercisesResult.rows,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 };
 
@@ -750,25 +811,25 @@ export const getUserWorkoutHistory = async (req, res) => {
 };
 
 // Monday-start week boundary for a UTC-midnight date.
-function mondayOf(date) {
+export function mondayOf(date) {
   const day = date.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
   return addDays(date, diff);
 }
 
-function addDays(date, days) {
+export function addDays(date, days) {
   const result = new Date(date);
   result.setUTCDate(result.getUTCDate() + days);
   return result;
 }
 
-function toISODate(date) {
+export function toISODate(date) {
   return date.toISOString().slice(0, 10);
 }
 
 // Same estimate toTodayWorkout uses on the client when a session has no
 // recorded duration_minutes (every auto-generated session starts at 0).
-function estimateDurationMinutes(durationMinutes, totalSets) {
+export function estimateDurationMinutes(durationMinutes, totalSets) {
   return durationMinutes || Math.max(20, Math.round(totalSets * 2.5));
 }
 

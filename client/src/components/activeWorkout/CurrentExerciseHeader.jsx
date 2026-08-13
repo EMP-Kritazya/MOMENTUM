@@ -1,4 +1,3 @@
-import React from "react";
 import { X } from "lucide-react";
 
 export function CurrentExerciseHeader({ completed, started, title, onExit }) {

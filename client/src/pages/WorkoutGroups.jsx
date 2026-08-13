@@ -2,14 +2,18 @@ import { useCallback, useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import {
   createGroup,
+  deleteGroup,
   getGroupMembers,
   getUserGroups,
   joinGroup,
   leaveGroup,
+  updateGroup,
 } from "../api/groupsApi.js";
 import CreateGroupModal from "../components/groups/CreateGroupModal.jsx";
+import EditGroupModal from "../components/groups/EditGroupModal.jsx";
 import GroupCard from "../components/groups/GroupCard.jsx";
 import JoinGroupForm from "../components/groups/JoinGroupForm.jsx";
+import ActionToast from "../components/ui/ActionToast.jsx";
 import { useAuth } from "../context/authContext.js";
 
 export default function WorkoutGroups() {
@@ -20,34 +24,44 @@ export default function WorkoutGroups() {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingGroup, setEditingGroup] = useState(null);
+  const [editError, setEditError] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingGroupId, setDeletingGroupId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const loadGroups = useCallback(async (signal) => {
-    if (!user?.user_id) {
-      setLoading(false);
-      return;
-    }
+  const closeToast = useCallback(() => setSuccessMessage(""), []);
 
-    setLoading(true);
-    setError("");
-
-    try {
-      const groupRows = await getUserGroups(signal);
-      const groupsWithMembers = await Promise.all(
-        groupRows.map(async (group) => ({
-          ...group,
-          members: await getGroupMembers(group.group_id, signal),
-        })),
-      );
-
-      setGroups(groupsWithMembers);
-    } catch (requestError) {
-      if (requestError.name !== "AbortError") {
-        setError(requestError.message);
+  const loadGroups = useCallback(
+    async (signal) => {
+      if (!user?.user_id) {
+        setLoading(false);
+        return;
       }
-    } finally {
-      if (!signal?.aborted) setLoading(false);
-    }
-  }, [user?.user_id]);
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const groupRows = await getUserGroups(signal);
+        const groupsWithMembers = await Promise.all(
+          groupRows.map(async (group) => ({
+            ...group,
+            members: await getGroupMembers(group.group_id, signal),
+          })),
+        );
+
+        setGroups(groupsWithMembers);
+      } catch (requestError) {
+        if (requestError.name !== "AbortError") {
+          setError(requestError.message);
+        }
+      } finally {
+        if (!signal?.aborted) setLoading(false);
+      }
+    },
+    [user?.user_id],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -64,6 +78,7 @@ export default function WorkoutGroups() {
     try {
       await createGroup(values);
       await loadGroups();
+      setSuccessMessage("Group created successfully");
       return true;
     } catch (requestError) {
       setError(requestError.message);
@@ -82,6 +97,7 @@ export default function WorkoutGroups() {
     try {
       await joinGroup({ invite_code: inviteCode });
       await loadGroups();
+      setSuccessMessage("Joined group successfully");
       return true;
     } catch (requestError) {
       setError(requestError.message);
@@ -100,8 +116,56 @@ export default function WorkoutGroups() {
     try {
       await leaveGroup(groupId);
       await loadGroups();
+      setSuccessMessage("Left group successfully");
     } catch (requestError) {
       setError(requestError.message);
+    }
+  }
+
+  function handleEdit(group) {
+    setEditError("");
+    setEditingGroup(group);
+  }
+
+  async function handleUpdate(values) {
+    if (!editingGroup || isUpdating) return;
+
+    setIsUpdating(true);
+    setEditError("");
+    setError("");
+
+    try {
+      await updateGroup(editingGroup.group_id, values);
+      await loadGroups();
+      setEditingGroup(null);
+      setSuccessMessage("Group updated successfully");
+    } catch (requestError) {
+      setEditError(requestError.message);
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  async function handleDelete(group) {
+    if (deletingGroupId) return;
+
+    const confirmed = window.confirm(
+      `Delete ${group.group_name}? All members will lose access to this group.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingGroupId(group.group_id);
+    setError("");
+    try {
+      await deleteGroup(group.group_id);
+      setGroups((current) =>
+        current.filter((item) => item.group_id !== group.group_id),
+      );
+      setSuccessMessage("Group deleted successfully");
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setDeletingGroupId(null);
     }
   }
 
@@ -112,7 +176,9 @@ export default function WorkoutGroups() {
   if (!user) {
     return (
       <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
-        <h1 className="font-display text-4xl text-white">Accountability Groups</h1>
+        <h1 className="font-display text-4xl text-white">
+          Accountability Groups
+        </h1>
         <p className="mt-6 rounded-2xl border border-momentum-border bg-momentum-panel p-6 text-momentum-muted">
           Complete onboarding before joining accountability groups.
         </p>
@@ -164,7 +230,10 @@ export default function WorkoutGroups() {
               key={group.group_id}
               group={group}
               currentUserId={user.user_id}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
               onLeave={handleLeave}
+              isDeleting={deletingGroupId === group.group_id}
             />
           ))}
 
@@ -189,6 +258,19 @@ export default function WorkoutGroups() {
         onCreate={handleCreate}
         isSubmitting={isCreating}
       />
+      <EditGroupModal
+        group={editingGroup}
+        serverError={editError}
+        isSubmitting={isUpdating}
+        onClose={() => {
+          if (!isUpdating) {
+            setEditingGroup(null);
+            setEditError("");
+          }
+        }}
+        onUpdate={handleUpdate}
+      />
+      <ActionToast message={successMessage} onClose={closeToast} />
     </section>
   );
 }
