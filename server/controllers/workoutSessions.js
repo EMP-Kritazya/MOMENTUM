@@ -62,7 +62,7 @@ const GOAL_SCHEME = {
 
 const DEFAULT_SCHEME = { sets: 3, reps: 10 };
 
-function classifySplit(muscles) {
+export function classifySplit(muscles) {
   const hasUpper = muscles.some((m) => UPPER_MUSCLES.has(m));
   const hasLower = muscles.some((m) => LOWER_MUSCLES.has(m));
   if (hasUpper && hasLower) return "full";
@@ -72,7 +72,7 @@ function classifySplit(muscles) {
 
 // equipment_available is stored as a VARCHAR, so pg hands it back as a string
 // like "{dumbbells,none}". Accept and Normalize
-function parseUserEquipment(raw) {
+export function parseUserEquipment(raw) {
   if (Array.isArray(raw)) return raw;
   if (typeof raw !== "string") return [];
   const trimmed = raw.trim();
@@ -86,7 +86,7 @@ function parseUserEquipment(raw) {
     .filter(Boolean);
 }
 
-function mapUserEquipment(raw) {
+export function mapUserEquipment(raw) {
   const allowed = new Set(["body only"]);
   for (const option of parseUserEquipment(raw)) {
     for (const value of EQUIPMENT_MAP[option] ?? []) {
@@ -96,7 +96,7 @@ function mapUserEquipment(raw) {
   return [...allowed];
 }
 
-function shuffle(list) {
+export function shuffle(list) {
   const copy = [...list];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -126,7 +126,7 @@ async function queryCandidates(
   return result.rows;
 }
 
-function fillSlots(candidates, slots) {
+export function fillSlots(candidates, slots) {
   const pools = new Map();
   for (const exercise of candidates) {
     if (!pools.has(exercise.target_muscle)) {
@@ -811,25 +811,25 @@ export const getUserWorkoutHistory = async (req, res) => {
 };
 
 // Monday-start week boundary for a UTC-midnight date.
-function mondayOf(date) {
+export function mondayOf(date) {
   const day = date.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
   return addDays(date, diff);
 }
 
-function addDays(date, days) {
+export function addDays(date, days) {
   const result = new Date(date);
   result.setUTCDate(result.getUTCDate() + days);
   return result;
 }
 
-function toISODate(date) {
+export function toISODate(date) {
   return date.toISOString().slice(0, 10);
 }
 
 // Same estimate toTodayWorkout uses on the client when a session has no
 // recorded duration_minutes (every auto-generated session starts at 0).
-function estimateDurationMinutes(durationMinutes, totalSets) {
+export function estimateDurationMinutes(durationMinutes, totalSets) {
   return durationMinutes || Math.max(20, Math.round(totalSets * 2.5));
 }
 
