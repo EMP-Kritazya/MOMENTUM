@@ -9,7 +9,10 @@
     "dev": "nodemon server.js",
     "reset": "cd config && node --require dotenv/config reset.js",
     "seed:admin": "node config/seedAdmin.js",
-    "seed:demo": "node config/seedDemo.js"
+    "seed:demo": "node config/seedDemo.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -23,5 +26,9 @@
     "jsonwebtoken": "^9.0.3",
     "nodemon": "^3.1.14",
     "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^3.0.0",
+    "vitest": "^3.2.7"
   }
 }
