@@ -11,15 +11,15 @@ import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
 import groupRouter from "./routes/groups.js";
+import passport from "passport";
+import session from "express-session";
+import { GitHub } from "./config/auth.js";
+import githubRouter from "./routes/gitHub.js";
 
 // create express app
 const app = express();
 
-// const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
-//   Boolean,
-// );
 const allowedOrigins = [
-  "http://localhost:5173",
   "https://momentum-av8u.onrender.com",
   process.env.CLIENT_URL,
 ].filter(Boolean);
@@ -31,9 +31,24 @@ app.use(
     credentials: true,
   }),
 );
+
+app.use(
+  session({
+    secret: "@jaiq&81kap0s",
+    resave: false,
+    saveUninitialized: false,
+  }),
+);
+
+app.use(passport.initialize());
+passport.use(GitHub);
+
 app.use(express.json());
 // Parses the authToken cookie into req.cookies for authenticateToken.
 app.use(cookieParser());
+
+app.use("/auth", githubRouter);
+
 app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
 app.use("/api/progressInsight", authenticateToken, progressRouter);
 
@@ -44,7 +59,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/exercises", exerciseRouter);
 app.use("/api/workouttemplates", workoutTemplateRouter);
-app.use("/api/users", userRouter);
+app.use("/api/users", authenticateToken, userRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/workoutsessions", authenticateToken, workoutSessionRouter);
 app.use("/api/groups", groupRouter);

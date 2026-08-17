@@ -11,15 +11,16 @@ import LoginPage from "./pages/LoginPage";
 import ActiveWorkout from "./pages/ActiveWorkout";
 import AdminTemplatesPage from "./pages/AdminTemplatesPage";
 import RequireAdminRoute from "./components/auth/RequireAdminRoute";
+import SignUpPage from "./pages/SignUpPage";
 
 export default function App() {
   return (
     <Routes>
       {/* Public page that does not display the application sidebar*/}
-      <Route path="/" element={<OnboardingPage />} />
+      <Route path="/" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />}></Route>
       <Route path="/admin/login" element={<AdminLoginPage />}></Route>
-      <Route path="/login" element={<LoginPage />} />
-
+      <Route path="/onboarding" element={<OnboardingPage />}></Route>
       {/* Full-screen focused workout runner (no sidebar). */}
       <Route path="/workout/active" element={<ActiveWorkout />} />
 
@@ -30,10 +31,7 @@ export default function App() {
         <Route path="/library" element={<ExerciseLibrary />} />
         <Route path="/groups" element={<WorkoutGroups />} />
         <Route element={<RequireAdminRoute />}>
-          <Route
-            path="/admin/templates"
-            element={<AdminTemplatesPage />}
-          />
+          <Route path="/admin/templates" element={<AdminTemplatesPage />} />
         </Route>
       </Route>
 

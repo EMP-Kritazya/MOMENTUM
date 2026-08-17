@@ -56,18 +56,22 @@ const createTables = async () => {
   const query = `
   CREATE TABLE IF NOT EXISTS Users (
     user_id SERIAL PRIMARY KEY,
+    firstname VARCHAR(50) NOT NULL,
+    lastname VARCHAR(50) NOT NULL,
     username VARCHAR(50) NOT NULL UNIQUE,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash TEXT,
+    password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'member'
       CHECK (role IN ('member', 'admin')),
     fitness_goal VARCHAR(50),
     experience_level VARCHAR(30),
     equipment_available VARCHAR(50),
     weekly_commitment INTEGER,
-    current_streak INTEGER DEFAULT 0
+    current_streak INTEGER DEFAULT 0,
+    streak_week_start DATE,
+    streak_grace_used BOOLEAN NOT NULL DEFAULT FALSE,
+    onboarded BOOLEAN NOT NULL DEFAULT FALSE,
+    onboarding_week BOOLEAN NOT NULL DEFAULT FALSE
   );
 
   CREATE TABLE IF NOT EXISTS Exercises (
@@ -137,7 +141,9 @@ const createTables = async () => {
     date DATE NOT NULL,
     duration_minutes INT DEFAULT 0,
     started BOOLEAN NOT NULL DEFAULT FALSE,
+    started_at TIMESTAMPTZ,
     completed BOOLEAN NOT NULL DEFAULT FALSE,
+    rolled_over BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (user_id)
       REFERENCES Users(user_id)
       ON DELETE CASCADE,
@@ -275,26 +281,26 @@ const seedAdmin = async () => {
     // Creates the admin or safely updates the existing account by email.
     const query = `
             INSERT INTO users (
-                username,
-                first_name,
-                last_name,
-                email,
-                password_hash,
-                role
-                )
+              firstname,
+              lastname,
+              username,
+              email,
+              password_hash,
+              role
+              )
             VALUES ($1, $2, $3, $4, $5, 'admin')
             ON CONFLICT (email)
             DO UPDATE SET
                 username = EXCLUDED.username,
-                first_name = EXCLUDED.first_name,
-                last_name = EXCLUDED.last_name,
+                firstname = EXCLUDED.firstname,
+                lastname = EXCLUDED.lastname,
                 password_hash = EXCLUDED.password_hash,
                 role = 'admin'
             RETURNING
                 user_id,
+                firstname,
+                lastname,
                 username,
-                first_name,
-                last_name,
                 email,
                 role
         `;

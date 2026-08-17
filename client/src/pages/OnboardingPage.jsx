@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { createOnboardingUser } from "../api/usersApi.js";
 import { useAuth } from "../context/authContext.js";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
@@ -6,9 +6,10 @@ import OnboardingNavigation from "../components/onboarding/OnboardingNavigation"
 import QuestionStep from "../components/onboarding/QuestionStep";
 import StepIndicators from "../components/onboarding/StepIndicators";
 import { onboardingQuestions } from "../data/onboardingQuestions";
-import { useNavigate } from "react-router-dom";
+import { replace, useNavigate } from "react-router-dom";
 import ProfileStep from "../components/onboarding/ProfileStep";
 import Button from "../components/ui/Button";
+import LoaderScreen from "../components/utilities/LoaderScreen.jsx";
 
 // Stores every profile and fitness answer collected during onboarding.
 const initialAnswers = {
@@ -33,7 +34,16 @@ const initialProfileErrors = {
 
 function OnboardingPage() {
   const nav = useNavigate();
-  const { refresh } = useAuth();
+  const { user, loading, refresh } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) nav("/", { replace: true });
+    if (user && user.onboarded) nav("/dashboard", { replace: true });
+  }, [loading, nav, user]);
+
+  if (loading) {
+    return <LoaderScreen />;
+  }
 
   // Controls the active fitness question and all onboarding form data.
   const [currentStep, setCurrentStep] = useState(0);
@@ -50,21 +60,6 @@ function OnboardingPage() {
   const canContinue = Array.isArray(currentAnswer)
     ? currentAnswer.length > 0
     : currentAnswer !== "" && currentAnswer !== null;
-
-  // Updates a profile field and clears its previous validation error.
-  function handleProfileChange(event) {
-    const { name, value } = event.target;
-
-    setAnswers((current) => ({
-      ...current,
-      [name]: value,
-    }));
-
-    setProfileErrors((current) => ({
-      ...current,
-      [name]: "",
-    }));
-  }
 
   // Validates required profile fields and returns an error object.
   function validateProfile(values) {
@@ -133,25 +128,6 @@ function OnboardingPage() {
       };
     });
   }
-
-  // Validates and normalizes profile data before showing fitness question one.
-  function handleProfileContinue() {
-    const errors = validateProfile(answers);
-    setProfileErrors(errors);
-
-    if (hasErrors(errors)) return;
-
-    setAnswers((current) => ({
-      ...current,
-      firstName: current.firstName.trim(),
-      lastName: current.lastName.trim(),
-      username: current.username.trim(),
-      email: current.email.trim().toLowerCase(),
-    }));
-
-    setShowProfileStep(false);
-  }
-
   // Advances questions, then submits the completed onboarding form.
   async function handleContinue() {
     if (!canContinue || isSubmitting) return;
@@ -170,7 +146,7 @@ function OnboardingPage() {
 
       // The server set the auth cookie; sync shared auth state before navigating.
       await refresh();
-      nav("/dashboard");
+      nav("/dashboard", { replace: true });
     } catch (error) {
       // Shows the server error without leaving the onboarding page.
       setSubmitError(
@@ -195,14 +171,15 @@ function OnboardingPage() {
   function buildUserPayload(values) {
     return {
       username: values.username.trim(),
-      first_name: values.firstName.trim(),
-      last_name: values.lastName.trim(),
+      firstname: values.firstName.trim(),
+      lastname: values.lastName.trim(),
       email: values.email.trim().toLowerCase(),
       fitness_goal: values.fitnessGoal,
       experience_level: values.experienceLevel,
       preferred_location: values.preferredLocation,
       equipment_available: values.equipmentAvailable,
       weekly_commitment: values.weeklyCommitment,
+      onboarded: true,
     };
   }
 
@@ -217,51 +194,25 @@ function OnboardingPage() {
 
         <section className="flex flex-1 flex-col px-6 pb-6 pt-20 sm:px-8 sm:pt-28">
           <div className="mx-auto w-full max-w-2xl">
-            {/* Shows profile inputs first, then switches to fitness questions. */}
-            {showProfileStep ? (
-              <>
-                <ProfileStep
-                  values={answers}
-                  errors={profileErrors}
-                  onChange={handleProfileChange}
-                />
-
-                <div className="mt-8">
-                  <Button
-                    type="button"
-                    onClick={handleProfileContinue}
-                    className="w-full"
-                  >
-                    Continue <span aria-hidden="true">→</span>
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <QuestionStep
-                  key={question.id}
-                  question={question}
-                  stepNumber={currentStep + 1}
-                  value={currentAnswer}
-                  onSelect={handleSelect}
-                />
-                <OnboardingNavigation
-                  canContinue={canContinue}
-                  isFirstStep={false}
-                  isLastStep={currentStep === onboardingQuestions.length - 1}
-                  onBack={handleBack}
-                  onContinue={handleContinue}
-                  isSubmitting={isSubmitting}
-                />
-                {submitError && (
-                  <p
-                    role="alert"
-                    className="mt-4 text-sm font-medium text-red-400"
-                  >
-                    {submitError}
-                  </p>
-                )}
-              </>
+            <QuestionStep
+              key={question.id}
+              question={question}
+              stepNumber={currentStep + 1}
+              value={currentAnswer}
+              onSelect={handleSelect}
+            />
+            <OnboardingNavigation
+              canContinue={canContinue}
+              isFirstStep={false}
+              isLastStep={currentStep === onboardingQuestions.length - 1}
+              onBack={handleBack}
+              onContinue={handleContinue}
+              isSubmitting={isSubmitting}
+            />
+            {submitError && (
+              <p role="alert" className="mt-4 text-sm font-medium text-red-400">
+                {submitError}
+              </p>
             )}
           </div>
 

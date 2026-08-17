@@ -28,8 +28,8 @@ Our database consists of 4 main entity tables, 1 dynamic tracking table, and 2 j
 | :-------------------- | :----------- | :--------------------------------------------------------- |
 | `user_id`             | serial       | primary key                                                |
 | `username`            | varchar(50)  | unique display name of the user                            |
-| `first_name`          | varchar(50)  | required first name of the user                            |
-| `last_name`           | varchar(50)  | required last name of the user                             |
+| `firstname`           | varchar(50)  | required first name of the user                            |
+| `lastname`            | varchar(50)  | required last name of the user                             |
 | `email`               | varchar(100) | unique email address used for identification               |
 | `fitness_goal`        | varchar(50)  | primary objective from onboarding (e.g., 'Build Muscle')   |
 | `experience_level`    | varchar(30)  | training background from onboarding (e.g., 'Intermediate') |

@@ -8,8 +8,8 @@ function MemberRow({ member, currentUserId }) {
   const isDone = member.daily_status === "done";
   const displayName = isCurrentUser
     ? "You"
-    : `${member.first_name} ${member.last_name}`.trim() || member.username;
-  const initial = member.first_name?.charAt(0).toUpperCase() || "?";
+    : `${member.firstname} ${member.lastname}`.trim() || member.username;
+  const initial = member.firstname?.charAt(0).toUpperCase() || "?";
 
   return (
     <li className="flex items-center gap-3 py-2.5">
@@ -25,9 +25,7 @@ function MemberRow({ member, currentUserId }) {
 
       <span
         className={`text-sm ${
-          isCurrentUser
-            ? "font-semibold text-momentum-lime"
-            : "text-white"
+          isCurrentUser ? "font-semibold text-momentum-lime" : "text-white"
         }`}
       >
         {displayName}

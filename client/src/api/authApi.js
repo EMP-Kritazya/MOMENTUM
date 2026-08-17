@@ -22,3 +22,10 @@ export function loginUser(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export function signUpUser(payload) {
+  return apiRequest("/api/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

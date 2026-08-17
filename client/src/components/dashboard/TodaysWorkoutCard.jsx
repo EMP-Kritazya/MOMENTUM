@@ -1,11 +1,25 @@
-import { ArrowRight, Clock, Zap, Target } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock, Zap, Target } from "lucide-react";
 import WorkoutExerciseList from "./WorkoutExerciseList";
-import { getUserWorkout } from "../../api/usersApi";
+import { getUserWorkout, getActivitySummary } from "../../api/usersApi";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { CardShell } from "./CardShell";
 import { updateSession } from "../../api/usersApi";
 import { toTodayWorkout } from "../../utils/toTodayWorkout";
+
+// Next UTC midnight, in ms from now. The server's "today" is a UTC calendar
+// date (see todaysSession), so the refresh must fire on that same boundary —
+// using the browser's local midnight would fire early/late for any user not
+// in UTC, and would shift for the same user after traveling.
+function msUntilNextUtcMidnight() {
+  const now = new Date();
+  const nextUtcMidnight = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() + 1,
+  );
+  return nextUtcMidnight - now.getTime();
+}
 
 function MetaStat({ icon: Icon, children }) {
   return (
@@ -20,6 +34,7 @@ function MetaStat({ icon: Icon, children }) {
 export function TodaysWorkoutCard() {
   const navigate = useNavigate();
   const [workout, setWorkout] = useState(null);
+  const [weekly, setWeekly] = useState(null);
   const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
   const [error, setError] = useState("");
 
@@ -36,9 +51,13 @@ export function TodaysWorkoutCard() {
 
     async function loadWorkout() {
       try {
-        const data = await getUserWorkout();
+        const [data, summary] = await Promise.all([
+          getUserWorkout(),
+          getActivitySummary(),
+        ]);
         if (!active) return;
         setWorkout(toTodayWorkout(data));
+        setWeekly(summary.weekly);
         setStatus("ready");
       } catch (err) {
         if (!active) return;
@@ -48,8 +67,14 @@ export function TodaysWorkoutCard() {
     }
 
     loadWorkout();
+
+    const timeoutId = setTimeout(() => {
+      loadWorkout();
+    }, msUntilNextUtcMidnight());
+
     return () => {
       active = false;
+      clearTimeout(timeoutId);
     };
   }, []);
 
@@ -83,7 +108,7 @@ export function TodaysWorkoutCard() {
     );
   }
 
-  let {
+  const {
     label,
     title,
     difficulty,
@@ -93,6 +118,7 @@ export function TodaysWorkoutCard() {
     started,
     completed,
     exercises,
+    rolledOver,
   } = workout;
 
   async function handleStart() {
@@ -104,6 +130,13 @@ export function TodaysWorkoutCard() {
     navigate("/workout/active");
   }
 
+  const streakWarning =
+    weekly?.atRisk && !completed
+      ? weekly.inGraceWeek
+        ? "This is your grace week — miss today and your streak resets to 0."
+        : "Finish today's workout or you'll miss this week's goal and enter a grace week."
+      : null;
+
   return (
     <CardShell>
       <div
@@ -112,6 +145,36 @@ export function TodaysWorkoutCard() {
       />
 
       <div className="relative">
+        {(rolledOver || streakWarning) && (
+          <div className="mb-6 flex flex-col gap-2">
+            {rolledOver && (
+              <div className="flex items-center gap-2 rounded-2xl border border-momentum-border/60 bg-white/5 px-4 py-2.5 text-sm text-momentum-muted">
+                <AlertTriangle
+                  className="h-4 w-4 shrink-0 text-momentum-muted"
+                  aria-hidden="true"
+                />
+                Yesterday&apos;s workout wasn&apos;t finished — here&apos;s a
+                fresh one for today.
+              </div>
+            )}
+            {streakWarning && (
+              <div
+                className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold ${
+                  weekly.inGraceWeek
+                    ? "border-red-500/40 bg-red-500/10 text-red-400"
+                    : "border-amber-500/40 bg-amber-500/10 text-amber-400"
+                }`}
+              >
+                <AlertTriangle
+                  className="h-4 w-4 shrink-0"
+                  aria-hidden="true"
+                />
+                {streakWarning}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-start justify-between">
           <p className="text-xs font-bold uppercase tracking-[0.15em] text-momentum-lime">
             {label}
@@ -141,7 +204,9 @@ export function TodaysWorkoutCard() {
             title={
               completed
                 ? "You've already finished today's workout — come back tomorrow"
-                : undefined
+                : started
+                  ? "Continue your workout"
+                  : undefined
             }
             className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-momentum-lime px-8 py-2.5 mt-7 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime focus-visible:ring-offset-2 focus-visible:ring-offset-momentum-panel cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-momentum-lime"
           >

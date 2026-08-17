@@ -1,22 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../api/authApi.js";
 import { useAuth } from "../context/authContext.js";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
 import TextInput from "../components/ui/TextInput";
 import Button from "../components/ui/Button";
+import LoaderScreen from "../components/utilities/LoaderScreen.jsx";
 
-const initialValues = { username: "", email: "" };
-const initialErrors = { username: "", email: "" };
+const initialValues = { email: "", password: "" };
+const initialErrors = { email: "", password: "" };
 
 function LoginPage() {
   const nav = useNavigate();
-  const { refresh } = useAuth();
+  const { user, refresh, loading } = useAuth();
 
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState(initialErrors);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    if (user) {
+      nav("/dashboard", { replace: true });
+    }
+  }, [user, nav]);
+
+  if (loading) {
+    return <LoaderScreen />;
+  }
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -25,16 +36,16 @@ function LoginPage() {
   }
 
   function validate(values) {
-    const errors = { username: "", email: "" };
-
-    if (!values.username.trim()) {
-      errors.username = "Username is required.";
-    }
+    const errors = { email: "", password: "" };
 
     if (!values.email.trim()) {
       errors.email = "Email is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
       errors.email = "Enter a valid email address.";
+    }
+
+    if (!values.password.trim()) {
+      errors.password = "Password is required.";
     }
 
     return errors;
@@ -44,7 +55,7 @@ function LoginPage() {
     return Object.values(errors).some(Boolean);
   }
 
-  async function handleSubmit(event) {
+  async function handleLoginSubmit(event) {
     event.preventDefault();
     if (isSubmitting) return;
 
@@ -57,17 +68,16 @@ function LoginPage() {
 
     try {
       await loginUser({
-        username: values.username.trim(),
         email: values.email.trim().toLowerCase(),
+        password: values.password,
       });
 
       // The server set the auth cookie; sync shared auth state before navigating.
       await refresh();
-      nav("/dashboard");
     } catch (error) {
       setSubmitError(
         error.message ||
-          "We couldn't find an account with that username and email.",
+          "We couldn't find an account with that password and email.",
       );
     } finally {
       setIsSubmitting(false);
@@ -89,51 +99,57 @@ function LoginPage() {
               Log in to Momentum
             </h1>
 
-            <p className="mt-4 text-base font-medium text-momentum-muted">
-              Enter the username and email you used during onboarding.
+            <div className="w-100% h-0.5 mt-5 mb-5 bg-[#181a27]"></div>
+
+            <p className="mt-4 text-sm text-momentum-muted">
+              Are you an administrator?{" "}
+              <Link
+                to="/admin/login"
+                className="font-semibold text-momentum-lime underline-offset-4 hover:underline focus:outline-none
+                    focus-visible:ring-2 focus-visible:ring-momentum-lime hover:cursor-pointer"
+              >
+                Sign in here
+              </Link>
             </p>
 
             <p className="mt-4 text-sm text-momentum-muted">
               New here?{" "}
               <Link
-                to="/onboarding"
+                to="/signup"
                 className="font-semibold text-momentum-lime underline-offset-4 hover:underline focus:outline-none
-                focus-visible:ring-2 focus-visible:ring-momentum-lime"
+                focus-visible:ring-2 focus-visible:ring-momentum-lime hover:cursor-pointer"
               >
-                Start onboarding
+                Sign Up
               </Link>
             </p>
 
             <form
-              onSubmit={handleSubmit}
+              onSubmit={handleLoginSubmit}
               className="mt-10 grid grid-cols-1 gap-5"
             >
               <TextInput
-                id="username"
-                label="Username"
-                value={values.username}
-                error={errors.username}
-                autoComplete="username"
-                maxLength={50}
-                placeholder="johndoe"
-                onChange={handleChange}
-              />
-
-              <TextInput
                 id="email"
                 label="Email"
-                type="email"
                 value={values.email}
                 error={errors.email}
                 autoComplete="email"
                 maxLength={100}
-                placeholder="johndoe@example.com"
+                onChange={handleChange}
+              />
+
+              <TextInput
+                id="password"
+                label="Password"
+                type="password"
+                value={values.password}
+                error={errors.password}
+                maxLength={100}
                 onChange={handleChange}
               />
 
               <Button
                 type="submit"
-                className="mt-4 w-full"
+                className="mt-4 w-full hover:cursor-pointer"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Logging in..." : "Log In"}

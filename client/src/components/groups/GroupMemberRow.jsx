@@ -1,6 +1,6 @@
 function getInitials(member) {
-  const first = member.first_name?.charAt(0) ?? "";
-  const last = member.last_name?.charAt(0) ?? "";
+  const first = member.firstname?.charAt(0) ?? "";
+  const last = member.lastname?.charAt(0) ?? "";
   return `${first}${last}`.toUpperCase() || "?";
 }
 
@@ -8,7 +8,7 @@ export default function GroupMemberRow({ member, currentUserId }) {
   const isCurrentUser = member.user_id === currentUserId;
   const displayName = isCurrentUser
     ? "You"
-    : `${member.first_name} ${member.last_name}`.trim() || member.username;
+    : `${member.firstname} ${member.lastname}`.trim() || member.username;
   const completed = member.daily_status === "done";
 
   return (

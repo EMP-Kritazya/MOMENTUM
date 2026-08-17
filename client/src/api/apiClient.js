@@ -2,8 +2,9 @@
 // const API_URL = import.meta.env.PROD
 //   ? "https://momentum-bxgh.onrender.com"
 //   : "http://localhost:3001";
-const API_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const API_URL = import.meta.env.PROD
+  ? import.meta.env.VITE_API_URL
+  : "http://localhost:3001";
 
 // Sends a request and provides consistent JSON and error handling.
 export async function apiRequest(path, options = {}) {

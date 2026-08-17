@@ -25,8 +25,7 @@ function normalizeExercise(body) {
       typeof body.difficulty === "string"
         ? body.difficulty.trim().toLowerCase()
         : undefined,
-    is_active:
-      typeof body.is_active === "boolean" ? body.is_active : undefined,
+    is_active: typeof body.is_active === "boolean" ? body.is_active : undefined,
   };
 }
 
@@ -56,8 +55,7 @@ function validateExercise(values, { partial = false } = {}) {
     errors.equipment_needed = "Equipment must be 50 characters or fewer";
   }
   if (values.difficulty && !DIFFICULTIES.has(values.difficulty)) {
-    errors.difficulty =
-      "Difficulty must be beginner, intermediate, or expert";
+    errors.difficulty = "Difficulty must be beginner, intermediate, or expert";
   }
 
   return errors;

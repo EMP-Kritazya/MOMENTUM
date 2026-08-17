@@ -6,8 +6,8 @@ async function seedUsers(client) {
     await client.query(
       `INSERT INTO users (
          username,
-         first_name,
-         last_name,
+         firstname,
+         lastname,
          email,
          role,
          fitness_goal,
@@ -20,8 +20,8 @@ async function seedUsers(client) {
        ON CONFLICT (email)
        DO UPDATE SET
          username = EXCLUDED.username,
-         first_name = EXCLUDED.first_name,
-         last_name = EXCLUDED.last_name,
+         firstname = EXCLUDED.firstname,
+         lastname = EXCLUDED.lastname,
          fitness_goal = EXCLUDED.fitness_goal,
          experience_level = EXCLUDED.experience_level,
          equipment_available = EXCLUDED.equipment_available,
@@ -163,8 +163,7 @@ async function seedSessions(client) {
       [sessionId],
     );
 
-    for (const [index, exercise] of
-      sessionDefinition.exercises.entries()) {
+    for (const [index, exercise] of sessionDefinition.exercises.entries()) {
       const exerciseResult = await client.query(
         `INSERT INTO workouttemplateexercises (
            session_id,

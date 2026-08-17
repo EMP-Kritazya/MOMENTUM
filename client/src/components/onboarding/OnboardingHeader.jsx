@@ -10,11 +10,11 @@ function OnboardingHeader({ currentStep, totalSteps, showProgress = true }) {
         <div className="font-display text-2xl tracking-wide text-white">
           <span className="text-momentum-lime">M</span>omentum
         </div>
-        {showProgress && (
+        {/* {showProgress && (
           <p className="text-sm font-semibold text-momentum-muted">
             {currentStep + 1} of {totalSteps}
           </p>
-        )}
+        )} */}
       </div>
 
       {showProgress && (

@@ -13,18 +13,15 @@ export function PerSet({ sets, reps, onComplete }) {
   const setArray = Array.from({ length: sets }, (_, index) => index + 1);
 
   const handleCheck = (index) => {
-    setCompletedSets((prevSets) => {
-      const nextSets = [...prevSets];
-      nextSets[index] = !nextSets[index];
+    const nextSets = [...completedSets];
+    nextSets[index] = !nextSets[index];
+    setCompletedSets(nextSets);
 
-      const wasComplete = prevSets.every(Boolean);
-      const isComplete = nextSets.every(Boolean);
-      if (!wasComplete && isComplete) {
-        onComplete();
-      }
-
-      return nextSets;
-    });
+    const wasComplete = completedSets.every(Boolean);
+    const isComplete = nextSets.every(Boolean);
+    if (!wasComplete && isComplete) {
+      onComplete();
+    }
   };
 
   return (

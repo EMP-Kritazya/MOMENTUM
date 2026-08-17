@@ -1,5 +1,6 @@
 import { pool } from "../config/database.js";
 
+//  can make biceps and triceps secondary
 const UPPER_MUSCLES = new Set([
   "chest",
   "middle back",
@@ -160,7 +161,12 @@ export function fillSlots(candidates, slots) {
   return chosen;
 }
 
-async function createTemplateExercises(lastSessionId, userId, today) {
+async function createTemplateExercises(
+  lastSessionId,
+  userId,
+  today,
+  rolledOver = false,
+) {
   const client = await pool.connect();
   try {
     let split;
@@ -265,10 +271,10 @@ async function createTemplateExercises(lastSessionId, userId, today) {
 
     const created = await client.query(
       `INSERT INTO workoutsessions
-         (user_id, template_id, date, duration_minutes, completed)
-       VALUES ($1, $2, $3, $4, FALSE)
+         (user_id, template_id, date, duration_minutes, completed, rolled_over)
+       VALUES ($1, $2, $3, $4, FALSE, $5)
        RETURNING *`,
-      [userId, templateId, today, 0],
+      [userId, templateId, today, 0, rolledOver],
     );
     const session = created.rows[0];
     const sessionId = session.session_id;
@@ -308,7 +314,7 @@ async function createTemplateExercises(lastSessionId, userId, today) {
 }
 
 async function loadWorkoutPayload(session) {
-  const [templateResult, exercisesResult] = await Promise.all([
+  const [templateResult, exercisesResult, user_experience] = await Promise.all([
     pool.query(`SELECT title FROM workouttemplates WHERE template_id = $1`, [
       session.template_id,
     ]),
@@ -328,9 +334,13 @@ async function loadWorkoutPayload(session) {
         ORDER BY wte.exercise_order ASC`,
       [session.session_id],
     ),
+    pool.query(`SELECT experience_level from users WHERE user_id = $1`, [
+      session.user_id,
+    ]),
   ]);
 
   return {
+    experience_level: user_experience.rows[0]?.experience_level ?? null,
     started: session.started ?? false,
     completed: session.completed ?? false,
     session,
@@ -446,7 +456,7 @@ export const todaysSession = async (req, res) => {
 
     // Find the last workout
     const previous = await pool.query(
-      `SELECT session_id, template_id
+      `SELECT session_id, template_id, completed
          FROM workoutsessions
         WHERE user_id = $1
         ORDER BY date DESC, session_id DESC
@@ -454,9 +464,16 @@ export const todaysSession = async (req, res) => {
       [userId],
     );
     const lastSessionId = previous.rows[0]?.session_id ?? -1;
-    const templateId = previous.rows[0]?.template_id ?? -1;
 
-    const session = await createTemplateExercises(lastSessionId, userId, today);
+    // if the previous workout isn't completed then we generate a rolled over flag, and
+    const rolledOver = previous.rows.length > 0 && !previous.rows[0].completed;
+
+    const session = await createTemplateExercises(
+      lastSessionId,
+      userId,
+      today,
+      rolledOver,
+    );
 
     return res.status(201).json(await loadWorkoutPayload(session));
   } catch (error) {
@@ -525,7 +542,8 @@ export const updateSession = async (req, res) => {
       UPDATE workoutsessions
       SET
         started=COALESCE($1, started),
-        completed=COALESCE($2, completed)
+        completed=COALESCE($2, completed),
+        started_at=CASE WHEN $1 THEN COALESCE(started_at, NOW()) ELSE started_at END
       WHERE session_id = $3
       RETURNING *
       `,
@@ -581,41 +599,41 @@ export const updateTemplateExercise = async (req, res) => {
 
     const sessionCompleted = allCompleteResult.rows[0]?.all_completed ?? false;
 
-    const sessionBefore = await pool.query(
-      `SELECT completed, date FROM workoutsessions WHERE session_id = $1`,
-      [sessionId],
-    );
-    const wasCompleted = sessionBefore.rows[0]?.completed ?? false;
-    const sessionDate = sessionBefore.rows[0]?.date;
-
-    await pool.query(
+    // A single UPDATE guarded by "completed IS DISTINCT FROM $1" rather than
+    // a separate read-then-write: Postgres takes a row lock for the
+    // duration of the UPDATE, so if two requests race to complete the same
+    // session (e.g. a duplicate network call), the second one's WHERE
+    // clause re-evaluates against the first's already-committed row and
+    // matches zero rows instead of both believing they're "the first" to
+    // complete it.
+    const transitionResult = await pool.query(
       `UPDATE workoutsessions
-          SET completed = $1
-        WHERE session_id = $2`,
+          SET completed = $1,
+              duration_minutes = CASE
+                WHEN $1 AND started_at IS NOT NULL
+                  THEN GREATEST(1, ROUND(EXTRACT(EPOCH FROM (NOW() - started_at)) / 60))
+                ELSE duration_minutes
+              END
+        WHERE session_id = $2
+          AND completed IS DISTINCT FROM $1
+      RETURNING session_id`,
       [sessionCompleted, sessionId],
     );
+    const justCompleted = sessionCompleted && transitionResult.rows.length > 0;
 
-    // Streak only moves the first time a session flips to completed, so
-    // re-completing (or re-fetching) never double-counts a day.
+    // The streak itself is a weekly-goal streak (see reconcileStreak): it
+    // only resets when the weekly_commitment goal is missed two weeks
+    // running, so it reconciles any pending week(s) first, then this
+    // workout adds its +1.
     let currentStreak;
-    if (sessionCompleted && !wasCompleted) {
-      const previousDayResult = await pool.query(
-        `SELECT 1
-           FROM workoutsessions
-          WHERE user_id = $1
-            AND completed = TRUE
-            AND date = $2::date - INTERVAL '1 day'
-          LIMIT 1`,
-        [userId, sessionDate],
-      );
-      const continuesStreak = previousDayResult.rows.length > 0;
-
+    if (justCompleted) {
+      await reconcileStreak(userId);
       const streakResult = await pool.query(
         `UPDATE users
-            SET current_streak = CASE WHEN $1 THEN current_streak + 1 ELSE 1 END
-          WHERE user_id = $2
+            SET current_streak = current_streak + 1
+          WHERE user_id = $1
           RETURNING current_streak`,
-        [continuesStreak, userId],
+        [userId],
       );
       currentStreak = streakResult.rows[0]?.current_streak;
     }
@@ -833,6 +851,100 @@ export function estimateDurationMinutes(durationMinutes, totalSets) {
   return durationMinutes || Math.max(20, Math.round(totalSets * 2.5));
 }
 
+function parseISODateUTC(isoDate) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function todayUTC() {
+  const now = new Date();
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+}
+
+export async function reconcileStreak(userId) {
+  const userResult = await pool.query(
+    `SELECT onboarding_week, weekly_commitment, streak_grace_used,
+            to_char(streak_week_start, 'YYYY-MM-DD') AS streak_week_start
+       FROM users WHERE user_id = $1`,
+    [userId],
+  );
+  const user = userResult.rows[0];
+  if (!user) return;
+
+  const currentWeekStart = mondayOf(todayUTC());
+  const weeklyGoal = user.weekly_commitment || 0;
+
+  if (!user.streak_week_start) {
+    // First time this user is tracked — nothing to reconcile yet.
+    await pool.query(
+      `UPDATE users SET streak_week_start = $1 onboarding_week = $2 WHERE user_id = $3`,
+      [toISODate(currentWeekStart), true, userId],
+    );
+    return;
+  }
+
+  // if this is users onboarding week (1st week), then the app shall inform the user about it as well as
+  // being lienent on their streak
+  if (user.onboarding_week) {
+    const daysLeft = currentWeekStart.getUTCDate + 7 - todayUTC().getUTCDate();
+  }
+
+  const trackedWeekStart = parseISODateUTC(user.streak_week_start);
+  if (trackedWeekStart.getTime() >= currentWeekStart.getTime()) {
+    return; // Still the same week — nothing to reconcile.
+  }
+
+  // No goal configured (e.g. onboarding incomplete): opt this user out of
+  // the weekly streak mechanic entirely rather than penalizing them for a
+  // goal they never set.
+  // Impossible but have added, since we might implement no commitment (option) in the future
+  if (weeklyGoal <= 0) {
+    await pool.query(
+      `UPDATE users SET streak_week_start = $1 WHERE user_id = $2`,
+      [toISODate(currentWeekStart), userId],
+    );
+    return;
+  }
+
+  let graceUsed = user.streak_grace_used;
+  let streakReset = false;
+
+  for (
+    let weekCursor = trackedWeekStart;
+    weekCursor.getTime() < currentWeekStart.getTime();
+    weekCursor = addDays(weekCursor, 7)
+  ) {
+    const weekEnd = addDays(weekCursor, 6);
+    const countResult = await pool.query(
+      `SELECT COUNT(*) FROM workoutsessions
+         WHERE user_id = $1 AND completed = TRUE
+           AND date >= $2 AND date <= $3`,
+      [userId, toISODate(weekCursor), toISODate(weekEnd)],
+    );
+    const metGoal = Number(countResult.rows[0].count) >= weeklyGoal;
+
+    if (metGoal) {
+      graceUsed = false;
+    } else if (!graceUsed) {
+      graceUsed = true; // First missed week: open the one-week grace period.
+    } else {
+      streakReset = true; // Missed the grace week too — streak is lost.
+      graceUsed = false;
+    }
+  }
+
+  await pool.query(
+    `UPDATE users
+        SET streak_week_start = $1,
+            streak_grace_used = $2,
+            current_streak = CASE WHEN $3 THEN 0 ELSE current_streak END
+      WHERE user_id = $4`,
+    [toISODate(currentWeekStart), graceUsed, streakReset, userId],
+  );
+}
+
 // GET /api/workoutsessions/activity-summary
 export const getUserActivitySummary = async (req, res) => {
   const userId = req.auth?.userId;
@@ -841,14 +953,17 @@ export const getUserActivitySummary = async (req, res) => {
   }
 
   try {
+    await reconcileStreak(userId);
+
     const userResult = await pool.query(
-      `SELECT weekly_commitment FROM users WHERE user_id = $1`,
+      `SELECT weekly_commitment, streak_grace_used FROM users WHERE user_id = $1`,
       [userId],
     );
     if (userResult.rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
     const workoutsGoal = userResult.rows[0].weekly_commitment || 0;
+    const inGraceWeek = userResult.rows[0].streak_grace_used;
 
     const now = new Date();
     const today = new Date(
@@ -869,7 +984,8 @@ export const getUserActivitySummary = async (req, res) => {
     const currentWeekStart = mondayOf(today);
     const eightWeeksStart = addDays(currentWeekStart, -7 * 7);
 
-    const rangeStart = gridStart < eightWeeksStart ? gridStart : eightWeeksStart;
+    const rangeStart =
+      gridStart < eightWeeksStart ? gridStart : eightWeeksStart;
 
     const sessionsResult = await pool.query(
       `SELECT to_char(ws.date, 'YYYY-MM-DD') AS date,
@@ -920,7 +1036,11 @@ export const getUserActivitySummary = async (req, res) => {
         if (minutesByDate.has(toISODate(addDays(weekStart, i)))) count += 1;
       }
       const value =
-        workoutsGoal > 0 ? Math.min(1, count / workoutsGoal) : count > 0 ? 1 : 0;
+        workoutsGoal > 0
+          ? Math.min(1, count / workoutsGoal)
+          : count > 0
+            ? 1
+            : 0;
       bars.push({ label: `W${8 - weeksAgo}`, value });
     }
 
@@ -939,6 +1059,17 @@ export const getUserActivitySummary = async (req, res) => {
       workoutsGoal > 0
         ? Math.min(100, Math.round((workoutsCompleted / workoutsGoal) * 100))
         : 0;
+    const avgSessionMinutes =
+      workoutsCompleted > 0 ? Math.round(activeMinutes / workoutsCompleted) : 0;
+
+    // Days left in the Monday-start week, counting today. Once the workouts
+    // still needed to hit the goal are >= the days left to get them, the
+    // user is at risk of missing this week's goal if they skip today.
+    const daysRemaining =
+      7 - Math.round((today.getTime() - currentWeekStart.getTime()) / 86400000);
+    const stillNeeded = Math.max(0, workoutsGoal - workoutsCompleted);
+    const atRisk =
+      workoutsGoal > 0 && stillNeeded > 0 && stillNeeded >= daysRemaining;
 
     return res.status(200).json({
       monthly: {
@@ -952,6 +1083,9 @@ export const getUserActivitySummary = async (req, res) => {
         workoutsGoal,
         activeMinutes,
         weeklyGoalPercent,
+        avgSessionMinutes,
+        atRisk,
+        inGraceWeek,
       },
     });
   } catch (error) {

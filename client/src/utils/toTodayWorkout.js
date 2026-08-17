@@ -7,6 +7,7 @@ function titleCase(value) {
 }
 
 export function toTodayWorkout({
+  experience_level,
   started,
   completed,
   session,
@@ -15,8 +16,11 @@ export function toTodayWorkout({
 }) {
   const list = exercises ?? [];
 
-  const [difficulty = "", ...rest] = (title ?? "").trim().split(" ");
-  const name = rest.join(" ") || "Today's Workout";
+  let name = (title ?? "").trim().split("_");
+  name = name.join(" ") || "Today's Workout Title";
+
+  let difficulty = (experience_level ?? "").trim().split("_");
+  difficulty = difficulty.join(" ") || "Your Difficulty";
 
   const totalSets = list.reduce(
     (sum, exercise) => sum + (exercise.sets ?? 0),
@@ -38,7 +42,9 @@ export function toTodayWorkout({
     calories,
     targetMuscles,
     started,
+    startedAt: session?.started_at ?? null,
     completed,
+    rolledOver: session?.rolled_over ?? false,
     exercises: list.map((exercise) => ({
       templateExerciseId: exercise.template_exercise_id,
       exerciseId: exercise.exercise_id,

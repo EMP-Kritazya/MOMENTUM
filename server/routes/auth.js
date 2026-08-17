@@ -5,6 +5,7 @@ import {
   getMe,
   logout,
   loginUser,
+  signUpUser,
 } from "../controllers/authController.js";
 
 const router = Router();
@@ -19,5 +20,17 @@ router.get("/me", authenticateToken, getMe);
 router.post("/logout", logout);
 
 router.post("/login", loginUser);
+
+router.post("/signup", signUpUser);
+
+router.get("/login/success", (req, res) => {
+  if (req.user) {
+    res.status(200).json({ success: true, user: req.user });
+  }
+});
+
+router.get("/login/failed", (req, res) => {
+  res.status(401).json({ success: false, user: "failure" });
+});
 
 export default router;

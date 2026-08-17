@@ -115,8 +115,6 @@ Users can browse a searchable exercise database containing exercise descriptions
 
 <img src='./milestones/gifs/ExerciseLibraryDemo.gif' title='Video Walkthrough' alt='Video Walkthrough' />
 
-
-
 ---
 
 ### ✅Workout Filtering & Sorting (Custom Feature)
@@ -125,22 +123,21 @@ Users can filter workouts by duration, muscle group, equipment, or difficulty an
 
 <img src='./milestones/gifs/filter.png' title='filter' alt='filter and sort' />
 
-
 ---
 
 # Stretch Features
 
 - ✅ User authentication using JWT
-    - Authentication uses signed JWTs stored in httpOnly cookies.
-    - Member login, onboarding authentication, admin login, logout, and current-user lookup exist.
+  - Authentication uses signed JWTs stored in httpOnly cookies.
+  - Member login, onboarding authentication, admin login, logout, and current-user lookup exist.
 
 - ✅ Loading indicators
-    - Dashboard cards use loading skeletons.
-    - Exercise Library uses a loading spinner.
-    - History, groups, authentication, and workout pages show loading states.
+  - Dashboard cards use loading skeletons.
+  - Exercise Library uses a loading spinner.
+  - History, groups, authentication, and workout pages show loading states.
 
 - ✅ Disable buttons during form submissions
-    - Onboarding, login, admin login, group creation, and group joining prevent duplicate submissions.
+  - Onboarding, login, admin login, group creation, and group joining prevent duplicate submissions.
 
 ---
 
@@ -199,8 +196,8 @@ PGDATABASE=your_database
 PGSSL=false
 JWT_SECRET=replace_with_a_long_random_secret
 ADMIN_USERNAME=admin
-ADMIN_FIRST_NAME=Momentum
-ADMIN_LAST_NAME=Admin
+ADMIN_firstname=Momentum
+ADMIN_lastname=Admin
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=replace_with_a_secure_password
 CLIENT_URL=http://localhost:5173
@@ -217,7 +214,6 @@ This command deletes existing application data. Do not use it against a
 production database.
 
 4. Start the backend.
-
 
 5. In another terminal, start the frontend.
 
@@ -251,7 +247,6 @@ Build Command: npm install && npm run dev
 Publish Directory: dist
 VITE_API_URL=https://momentum-bxgh.onrender.com
 ```
-
 
 ## Final walkthrough
 

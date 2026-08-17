@@ -80,6 +80,7 @@ export default function WeeklyProgressCard() {
     workoutsGoal,
     activeMinutes,
     weeklyGoalPercent,
+    avgSessionMinutes,
   } = weekly;
 
   return (
@@ -116,6 +117,12 @@ export default function WeeklyProgressCard() {
           </div>
           <ProgressBar value={weeklyGoalPercent} />
         </div>
+
+        <p className="mt-4 text-center text-xs text-momentum-muted">
+          {workoutsCompleted > 0
+            ? `Averaging ${avgSessionMinutes} min per session this week.`
+            : "Complete a workout this week to see your average session length."}
+        </p>
       </div>
     </section>
   );

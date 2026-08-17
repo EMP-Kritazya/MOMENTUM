@@ -1,12 +1,11 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "../config/database.js";
+import { reconcileStreak } from "./workoutSessions.js";
 import "../config/dotenv.js";
 
 const SESSION_DURATION_MS = 60 * 60 * 1000; // 60 minutes
 
-// Signs a token with a consistent { userId, role } payload so every consumer
-// (getMe, requireAdmin, ownership checks) can rely on the same shape.
 export const createToken = (userId, role = "member") => {
   return jwt.sign({ userId, role }, `${process.env.JWT_SECRET}`, {
     expiresIn: SESSION_DURATION_MS / 1000, // jsonwebtoken accepts seconds
@@ -42,8 +41,8 @@ export async function loginAdmin(req, res) {
             SELECT
                 user_id,
                 username,
-                first_name,
-                last_name,
+                firstname,
+                lastname,
                 email,
                 password_hash,
                 role
@@ -67,18 +66,15 @@ export async function loginAdmin(req, res) {
       throw new Error("JWT_SECRET is not configured.");
     }
 
-    // Signs the user's ID and role for protected admin routes.
     const token = createToken(user.user_id, user.role);
 
-    // Deliver the token as an httpOnly cookie instead of the response body,
-    // so it is sent automatically and never readable by client-side JS.
     setAuthCookie(res, token);
     return res.status(200).json({
       user: {
         user_id: user.user_id,
         username: user.username,
-        first_name: user.first_name,
-        last_name: user.last_name,
+        firstname: user.firstname,
+        lastname: user.lastname,
         email: user.email,
         role: user.role,
       },
@@ -89,14 +85,14 @@ export async function loginAdmin(req, res) {
   }
 }
 
-// Returns the currently authenticated user, identified from the verified cookie.
-// Runs behind authenticateToken, which populates req.auth from the JWT.
 export async function getMe(req, res) {
   const userId = req.auth.userId ?? req.auth.id;
 
   try {
+    await reconcileStreak(userId);
+
     const result = await pool.query(
-      `SELECT user_id, username, first_name, last_name, email, role, current_streak, weekly_commitment
+      `SELECT user_id, username, firstname, lastname, email, password_hash, role, current_streak, weekly_commitment, onboarded
        FROM users
        WHERE user_id = $1
        LIMIT 1`,
@@ -114,7 +110,6 @@ export async function getMe(req, res) {
   }
 }
 
-// Clears the auth cookie. Options must match those used when the cookie was set.
 export function logout(req, res) {
   res.clearCookie("authToken", {
     httpOnly: true,
@@ -126,20 +121,80 @@ export function logout(req, res) {
 
 // Authenticates a regular user via username + email
 export async function loginUser(req, res) {
-  const username = req.body.username?.trim();
   const email = req.body.email?.trim().toLowerCase();
+  const password = req.body.password?.trim();
 
-  if (!username || !email) {
-    return res.status(400).json({ message: "Username and email are required" });
+  if (!password || !email) {
+    return res.status(400).json({ message: "Password and email are required" });
   }
 
   try {
     const result = await pool.query(
-      `SELECT user_id, username, first_name, last_name, email, role, current_streak
+      `SELECT user_id, username, firstname, lastname, email, password_hash, role, current_streak
        FROM users
-       WHERE username = $1 AND email = $2
+       WHERE email = $1
        LIMIT 1`,
-      [username, email],
+      [email],
+    );
+
+    const user = result.rows[0];
+
+    const passwordMatch =
+      user?.password_hash &&
+      (await bcrypt.compare(password, user.password_hash));
+
+    if (!user || !passwordMatch) {
+      return res.status(404).json({
+        message:
+          "Please enter valid credentials. Sign Up if you don't have an account",
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured.");
+    }
+
+    const token = createToken(user.user_id, user.role);
+    setAuthCookie(res, token);
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    console.error("Unable to authenticate user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function signUpUser(req, res) {
+  const firstname = req.body.firstname?.trim();
+  const lastname = req.body.lastname?.trim();
+  const username = req.body.username?.trim();
+  const email = req.body.email?.trim();
+  const password = req.body.password;
+  const onboarded = false;
+
+  if (!username || !email || !username || !email || !password) {
+    return res.status(400).json({ message: "ALl fields are required" });
+  }
+
+  try {
+    // fist see if the email is already registered
+    const isUser = await pool.query(`SELECT * FROM users where email = $1`, [
+      email,
+    ]);
+
+    if (isUser.rows.length > 0) {
+      return res
+        .status(409)
+        .json({ message: "Email is already registered. Try loggin in" });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const result = await pool.query(
+      `
+      INSERT INTO users (firstname, lastname, username, email, password_hash, onboarded) VALUES($1, $2, $3, $4, $5, $6) RETURNING *
+      `,
+      [firstname, lastname, username, email, passwordHash, onboarded],
     );
 
     const user = result.rows[0];
@@ -147,7 +202,7 @@ export async function loginUser(req, res) {
     if (!user) {
       return res
         .status(404)
-        .json({ message: "No account found with that username and email" });
+        .json({ message: "Failed to register. Please try again" });
     }
 
     if (!process.env.JWT_SECRET) {

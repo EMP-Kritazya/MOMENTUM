@@ -5,6 +5,10 @@ import MonthlyActivityCard from "../components/dashboard/MonthlyActivityCard";
 import WeeklyProgressCard from "../components/dashboard/WeeklyProgressCard";
 import GroupProgressCard from "../components/dashboard/GroupProgressCard";
 import { useAuth } from "../context/authContext";
+import { replace } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import LoaderScreen from "../components/utilities/LoaderScreen";
 // import {
 //   user,
 //   todayDate,
@@ -16,14 +20,32 @@ import { useAuth } from "../context/authContext";
 // } from "../data/dashboardData";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  const nav = useNavigate();
 
   const displayName = user?.username ?? "";
   const current_streak = user?.current_streak ?? "";
 
-  const date = new Date();
-  const currDate = date.toLocaleString();
-  const currHour = date.getHours();
+  const currDate = currentDateTime.toLocaleString();
+  const currHour = currentDateTime.getHours();
+
+  useEffect(() => {
+    if (!loading && user && !user.onboarded)
+      nav("/onboarding", { replace: true });
+  }, [loading, user, currDate]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    // Clean up the interval when the component unmounts to prevent memory leaks
+    return () => clearInterval(timer);
+  }, []);
+
+  if (loading) return <LoaderScreen />;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">

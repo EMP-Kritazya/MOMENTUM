@@ -109,8 +109,8 @@ export async function getGroupMembers(req, res) {
     const result = await pool.query(
       `SELECT u.user_id,
               u.username,
-              u.first_name,
-              u.last_name,
+              u.firstname,
+              u.lastname,
               gm.is_admin,
               gm.current_streak,
               gm.joined_at,

@@ -32,8 +32,8 @@ export default function Sidebar() {
     if (!loading && !user) navigate("/", { replace: true });
   }, [loading, navigate, user]);
 
-  const firstName = user?.first_name ?? "";
-  const lastName = user?.last_name ?? "";
+  const firstName = user?.firstname ?? "";
+  const lastName = user?.lastname ?? "";
   const displayName =
     `${firstName} ${lastName}`.trim() || user?.username || "Momentum User";
   const initials =

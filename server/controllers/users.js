@@ -31,26 +31,8 @@ const WEEKLY_COMMITMENTS = new Set([2, 3, 4, 5]);
 function validateOnboarding(body) {
   const errors = {};
 
-  const username = body.username?.trim();
-  const first_name = body.first_name?.trim();
-  const last_name = body.last_name?.trim();
-  const email = body.email?.trim();
   const equipment = body.equipment_available;
 
-  if (!username) {
-    errors.username = "Username is required";
-  }
-  if (!first_name) {
-    errors.first_name = "First name is required";
-  }
-  if (!last_name) {
-    errors.last_name = "Last name is required";
-  }
-  if (!email) {
-    errors.email = "Email is required";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = "Enter a valid email address.";
-  }
   if (!FITNESS_GOALS.has(body.fitness_goal)) {
     errors.fitness_goal = "Select a supported fitness goal.";
   }
@@ -79,34 +61,6 @@ function validateOnboarding(body) {
   return errors;
 }
 
-// GET /api/users
-export const getAllUsers = async (req, res) => {
-  try {
-    const results = await pool.query(
-      `SELECT * FROM users ORDER BY user_id ASC`,
-    );
-    res.status(200).json(results.rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// GET /api/users/
-export const getIndividualUser = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query("SELECT * FROM users WHERE user_id = $1", [
-      id,
-    ]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.status(200).json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
 // POST /api/users
 export const createUser = async (req, res) => {
   const errors = validateOnboarding(req.body);
@@ -118,72 +72,67 @@ export const createUser = async (req, res) => {
     });
   }
   const {
-    username,
-    first_name,
-    last_name,
-    email,
     fitness_goal,
     experience_level,
     equipment_available,
     weekly_commitment,
+    onboarded,
   } = req.body;
+
+  const user_id = req.auth?.userId;
 
   try {
     const user = await pool.query(
-      `SELECT user_id FROM users WHERE email = $1`,
-      [email],
+      `SELECT user_id FROM users WHERE user_id = $1`,
+      [user_id],
     );
-
-    const existingUsername = await pool.query(
-      `SELECT user_id FROM users WHERE username = $1 AND email != $2`,
-      [username, email],
-    );
-
-    if (existingUsername.rows.length > 0) {
+    console.log(user.rows[0]);
+    if (user.rows.length === 0) {
       return res.status(400).json({
-        message: "Please correct onboarding fields",
-        errors: { username: "That username is already taken." },
+        error: "Cannot find the user",
       });
     }
 
     let result;
-    if (user.rows.length === 0) {
+    if (user.rows.length != 0) {
       result = await pool.query(
-        `INSERT INTO users
-        (username, first_name, last_name, email, fitness_goal,
-         experience_level, equipment_available, weekly_commitment, current_streak)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `UPDATE users
+        SET fitness_goal = $1,
+            experience_level= $2,
+            equipment_available= $3,
+            weekly_commitment= $4,
+            current_streak= $5,
+            onboarded = $6
+       WHERE user_id = $7
        RETURNING *`,
         [
-          username,
-          first_name,
-          last_name,
-          email,
           fitness_goal,
           experience_level,
           equipment_available,
           weekly_commitment,
           0,
+          onboarded,
+          user_id,
         ],
       );
     } else {
       result = await pool.query(
         `UPDATE users SET
-          username = $1,
-         fitness_goal = $2,
-         experience_level = $3,
-         equipment_available = $4,
-         weekly_commitment = $5
-         WHERE email = $6
+         fitness_goal = $1,
+         experience_level = $2,
+         equipment_available = $3,
+         weekly_commitment = $4,
+         onboarded = $5,
+         WHERE user_id = $6
          RETURNING *
         `,
         [
-          username,
           fitness_goal,
           experience_level,
           equipment_available,
           weekly_commitment,
-          email,
+          onboarded,
+          user_id,
         ],
       );
     }
@@ -219,8 +168,8 @@ export const updateUser = async (req, res) => {
   const { id } = req.params;
   const {
     username,
-    first_name,
-    last_name,
+    firstname,
+    lastname,
     email,
     fitness_goal,
     experience_level,
@@ -232,8 +181,8 @@ export const updateUser = async (req, res) => {
     const result = await pool.query(
       `UPDATE users
        SET username            = COALESCE($1, username),
-           first_name          = COALESCE($2, first_name),
-           last_name           = COALESCE($3, last_name),
+           firstname          = COALESCE($2, firstname),
+           lastname           = COALESCE($3, lastname),
            email               = COALESCE($4, email),
            fitness_goal        = COALESCE($5, fitness_goal),
            experience_level    = COALESCE($6, experience_level),
@@ -243,8 +192,8 @@ export const updateUser = async (req, res) => {
        RETURNING *`,
       [
         username,
-        first_name,
-        last_name,
+        firstname,
+        lastname,
         email,
         fitness_goal,
         experience_level,

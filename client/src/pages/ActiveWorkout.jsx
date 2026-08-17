@@ -8,6 +8,16 @@ import { CurrentExerciseCard } from "../components/activeWorkout/CurrentExercise
 import { CurrentExerciseHeader } from "../components/activeWorkout/CurrentExerciseHeader";
 import { useAuth } from "../context/authContext";
 
+function formatElapsed(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (value) => String(value).padStart(2, "0");
+  return hours > 0
+    ? `${hours}:${pad(minutes)}:${pad(seconds)}`
+    : `${minutes}:${pad(seconds)}`;
+}
+
 function CompletedList({ exercises }) {
   if (exercises.length === 0) return null;
 
@@ -45,6 +55,7 @@ export default function ActiveWorkout() {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
   const [error, setError] = useState("");
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -83,6 +94,21 @@ export default function ActiveWorkout() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [navigate]);
+
+  // Shows timer
+  useEffect(() => {
+    if (!workout?.startedAt || workout.completed) return;
+
+    const startedAtMs = new Date(workout.startedAt).getTime();
+    const tick = () =>
+      setElapsedSeconds(
+        Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000)),
+      );
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [workout?.startedAt, workout?.completed]);
 
   const handleExerciseComplete = async (templateExerciseId) => {
     try {
@@ -160,11 +186,7 @@ export default function ActiveWorkout() {
     );
   }
 
-  const {
-    title,
-    started,
-    completed,
-  } = workout;
+  const { title, started, completed } = workout;
 
   const currExercise = exerciseQueue[currentIndex] ?? null;
   const upNextExercises = exerciseQueue.filter(
@@ -231,6 +253,7 @@ export default function ActiveWorkout() {
           completed={completed}
           started={started}
           title={title}
+          elapsedLabel={started ? formatElapsed(elapsedSeconds) : null}
           onExit={() => navigate("/dashboard")}
         />
         {/* ── Overall progress bar ───────────────────────────────────────── */}
