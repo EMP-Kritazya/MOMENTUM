@@ -6,14 +6,17 @@ const API_URL = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL
   : "http://localhost:3001";
 
-// Sends a request and provides consistent JSON and error handling.
+// Lets the server compute "today" against the user's own calendar day instead of UTC
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 export async function apiRequest(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
-    // Sends the httpOnly authToken cookie so protected routes stay authenticated.
+
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      "X-Timezone": TIME_ZONE,
       ...options.headers,
     },
   });

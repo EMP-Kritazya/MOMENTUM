@@ -1,4 +1,11 @@
-import { AlertTriangle, ArrowRight, Clock, Zap, Target } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Clock,
+  Zap,
+  Target,
+  Waves,
+} from "lucide-react";
 import WorkoutExerciseList from "./WorkoutExerciseList";
 import { getUserWorkout, getActivitySummary } from "../../api/usersApi";
 import { useState, useEffect, useCallback } from "react";
@@ -7,18 +14,14 @@ import { CardShell } from "./CardShell";
 import { updateSession } from "../../api/usersApi";
 import { toTodayWorkout } from "../../utils/toTodayWorkout";
 
-// Next UTC midnight, in ms from now. The server's "today" is a UTC calendar
-// date (see todaysSession), so the refresh must fire on that same boundary —
-// using the browser's local midnight would fire early/late for any user not
-// in UTC, and would shift for the same user after traveling.
-function msUntilNextUtcMidnight() {
+function msUntilNextLocalMidnight() {
   const now = new Date();
-  const nextUtcMidnight = Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate() + 1,
+  const nextLocalMidnight = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
   );
-  return nextUtcMidnight - now.getTime();
+  return nextLocalMidnight.getTime() - now.getTime();
 }
 
 function MetaStat({ icon: Icon, children }) {
@@ -70,7 +73,7 @@ export function TodaysWorkoutCard() {
 
     const timeoutId = setTimeout(() => {
       loadWorkout();
-    }, msUntilNextUtcMidnight());
+    }, msUntilNextLocalMidnight());
 
     return () => {
       active = false;
@@ -108,7 +111,7 @@ export function TodaysWorkoutCard() {
     );
   }
 
-  const {
+  let {
     label,
     title,
     difficulty,
@@ -131,11 +134,15 @@ export function TodaysWorkoutCard() {
   }
 
   const streakWarning =
-    weekly?.atRisk && !completed
+    weekly?.atRisk && !completed && !weekly?.onboardingWeek
       ? weekly.inGraceWeek
-        ? "This is your grace week — miss today and your streak resets to 0."
+        ? "This is your grace week — you will lose your streak if you don't fulfill your commitment."
         : "Finish today's workout or you'll miss this week's goal and enter a grace week."
       : null;
+
+  const onboardingInfo = weekly?.onboardingWeek
+    ? "Onboarding Week: This is the only week with no limitation on how much you can increase your streak. You don't lose your streak."
+    : null;
 
   return (
     <CardShell>
@@ -145,19 +152,19 @@ export function TodaysWorkoutCard() {
       />
 
       <div className="relative">
-        {(rolledOver || streakWarning) && (
+        {(rolledOver || streakWarning || onboardingInfo) && (
           <div className="mb-6 flex flex-col gap-2">
-            {rolledOver && (
+            {!onboardingInfo && rolledOver && (
               <div className="flex items-center gap-2 rounded-2xl border border-momentum-border/60 bg-white/5 px-4 py-2.5 text-sm text-momentum-muted">
                 <AlertTriangle
                   className="h-4 w-4 shrink-0 text-momentum-muted"
                   aria-hidden="true"
                 />
-                Yesterday&apos;s workout wasn&apos;t finished — here&apos;s a
-                fresh one for today.
+                Pervious workout wasn&apos;t finished, thus has been rolled
+                over.
               </div>
             )}
-            {streakWarning && (
+            {!onboardingInfo && streakWarning && (
               <div
                 className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold ${
                   weekly.inGraceWeek
@@ -170,6 +177,15 @@ export function TodaysWorkoutCard() {
                   aria-hidden="true"
                 />
                 {streakWarning}
+              </div>
+            )}
+            {onboardingInfo && (
+              <div className="flex items-center gap-2 rounded-2xl border border-momentum-border/60 bg-white/5 px-4 py-2.5 text-sm text-blue-200">
+                <Waves
+                  className="h-4 w-4 shrink-0 text-blue-200"
+                  aria-hidden="true"
+                />
+                {onboardingInfo}
               </div>
             )}
           </div>
@@ -211,12 +227,13 @@ export function TodaysWorkoutCard() {
             className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-momentum-lime px-8 py-2.5 mt-7 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime focus-visible:ring-offset-2 focus-visible:ring-offset-momentum-panel cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-momentum-lime"
           >
             {completed
-              ? "Get Next Workout"
+              ? "Today's Workout - Completed"
               : started
                 ? "Continue Workout"
                 : "Start Workout"}
-
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            {!completed && (
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            )}
           </button>
         </div>
 
