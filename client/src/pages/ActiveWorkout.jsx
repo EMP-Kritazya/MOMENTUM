@@ -7,6 +7,7 @@ import { getUserWorkout, updateExerciseCompletion } from "../api/usersApi";
 import { CurrentExerciseCard } from "../components/activeWorkout/CurrentExerciseCard";
 import { CurrentExerciseHeader } from "../components/activeWorkout/CurrentExerciseHeader";
 import { useAuth } from "../context/authContext";
+import LoaderScreen from "../components/utilities/LoaderScreen";
 
 function formatElapsed(totalSeconds) {
   const hours = Math.floor(totalSeconds / 3600);
@@ -85,7 +86,6 @@ export default function ActiveWorkout() {
     };
   }, []);
 
-  // Treats the focused workout runner like a modal: Escape exits to Dashboard.
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === "Escape") navigate("/dashboard");
@@ -157,20 +157,7 @@ export default function ActiveWorkout() {
   };
 
   if (status === "loading") {
-    return (
-      <CardShell>
-        <div className="h-4 w-32 animate-pulse rounded bg-white/10" />
-        <div className="mt-4 h-10 w-64 animate-pulse rounded bg-white/10" />
-        <div className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-14 animate-pulse rounded-2xl bg-white/5"
-            />
-          ))}
-        </div>
-      </CardShell>
-    );
+    return <LoaderScreen />;
   }
 
   if (status === "error") {

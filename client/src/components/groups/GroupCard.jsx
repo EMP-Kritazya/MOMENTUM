@@ -1,5 +1,6 @@
 import { LogOut, Pencil, Trash2, Users } from "lucide-react";
 import GroupMemberRow from "./GroupMemberRow.jsx";
+import { useState } from "react";
 
 export default function GroupCard({
   group,
@@ -9,9 +10,19 @@ export default function GroupCard({
   onLeave,
   isDeleting,
 }) {
+  const [copied, setCopied] = useState(false);
   const completedCount = group.members.filter(
     (member) => member.daily_status === "done",
   ).length;
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(group.invite_code);
+    setCopied(true);
+
+    setTimeout(() => {
+      setCopied(false);
+    }, 3000);
+  };
 
   return (
     <article className="rounded-2xl border border-momentum-border bg-momentum-panel p-5">
@@ -23,36 +34,31 @@ export default function GroupCard({
               {group.description}
             </p>
           )}
-          {group.invite_code && (
-            <div className="mt-3 flex items-center gap-3">
-              <span className="rounded-lg bg-[#191b25] px-3 py-2 font-mono text-sm text-momentum-lime">
-                {group.invite_code}
-              </span>
 
-              <button
-                type="button"
-                onClick={() =>
-                  navigator.clipboard.writeText(group.invite_code)
-                }
-                className="rounded-lg border border-momentum-border px-3 py-2 text-xs font-semibold text-white hover:bg-white/5"
-              >
-                Copy invite code
-              </button>
-            </div>
-          )}
-
-          <div className="mt-3 flex flex-wrap gap-4 text-xs text-momentum-muted">
+          <div className="mt-5 flex flex-wrap gap-4 text-xs text-momentum-muted">
             <span className="flex items-center gap-1.5">
               <Users size={14} aria-hidden="true" />
               {group.members.length} members
             </span>
-            <span>🔥 {group.current_streak}-day streak</span>
           </div>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
           {group.current_user_is_creator ? (
-            <>
+            <div className="flex gap-4">
+              {group.invite_code && (
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className={`cursor-pointer rounded-lg border border-momentum-border px-3 py-1 text-xs font-semibold transition ${
+                    copied
+                      ? "bg-momentum-lime text-black hover:bg-momentum-lime"
+                      : "text-white hover:bg-white/5"
+                  }`}
+                >
+                  {copied ? "Copied" : "Copy Invite Code"}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => onEdit(group)}
@@ -70,7 +76,7 @@ export default function GroupCard({
               >
                 <Trash2 size={16} aria-hidden="true" />
               </button>
-            </>
+            </div>
           ) : (
             <button
               type="button"
