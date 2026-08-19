@@ -443,7 +443,7 @@ export const todaysSession = async (req, res) => {
     return res.status(401).json({ message: "Authentication required" });
   }
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toISODate(todayInTimeZone(req.timeZone));
 
   try {
     const existing = await pool.query(
@@ -627,7 +627,7 @@ export const updateTemplateExercise = async (req, res) => {
     // workout adds its +1.
     let currentStreak;
     if (justCompleted) {
-      await reconcileStreak(userId);
+      await reconcileStreak(userId, req.timeZone);
       const streakResult = await pool.query(
         `UPDATE users
             SET current_streak = current_streak + 1
@@ -708,10 +708,11 @@ export const getUserWorkoutHistory = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const values = [userId];
+    const todayISO = toISODate(todayInTimeZone(req.timeZone));
+    const values = [userId, todayISO];
     const conditions = [
       "ws.user_id = $1",
-      "(ws.completed = TRUE OR ws.date < CURRENT_DATE)",
+      "(ws.completed = TRUE OR ws.date < $2)",
     ];
 
     if (status === "completed") {
@@ -720,7 +721,7 @@ export const getUserWorkoutHistory = async (req, res) => {
 
     if (status === "skipped") {
       conditions.push("ws.completed = FALSE");
-      conditions.push("ws.date < CURRENT_DATE");
+      conditions.push("ws.date < $2");
     }
 
     if (muscle) {
@@ -803,10 +804,10 @@ export const getUserWorkoutHistory = async (req, res) => {
        JOIN exercises e
          ON e.exercise_id = wte.exercise_id
        WHERE ws.user_id = $1
-         AND (ws.completed = TRUE OR ws.date < CURRENT_DATE)
+         AND (ws.completed = TRUE OR ws.date < $2)
          AND e.target_muscle IS NOT NULL
        ORDER BY e.target_muscle ASC`,
-      [userId],
+      [userId, todayISO],
     );
 
     const total = Number.parseInt(countResult.rows[0].total, 10);
@@ -841,6 +842,10 @@ export function addDays(date, days) {
   return result;
 }
 
+export function diffInDays(time1, time2) {
+  return (time1.getTime() - time2.getTime()) / (1000 * 60 * 60 * 24);
+}
+
 export function toISODate(date) {
   return date.toISOString().slice(0, 10);
 }
@@ -856,14 +861,21 @@ function parseISODateUTC(isoDate) {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
-function todayUTC() {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
+// "Today" as a UTC-midnight Date whose Y/M/D fields reflect the calendar
+// date in timeZone (an IANA name, e.g. "Asia/Kolkata"), not the server's
+// UTC clock. mondayOf/addDays/toISODate only ever read/write UTC-getter
+// fields, so they work unchanged on the Date this returns.
+export function todayInTimeZone(timeZone) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return parseISODateUTC(formatter.format(new Date()));
 }
 
-export async function reconcileStreak(userId) {
+export async function reconcileStreak(userId, timeZone) {
   const userResult = await pool.query(
     `SELECT onboarding_week, weekly_commitment, streak_grace_used,
             to_char(streak_week_start, 'YYYY-MM-DD') AS streak_week_start
@@ -873,27 +885,29 @@ export async function reconcileStreak(userId) {
   const user = userResult.rows[0];
   if (!user) return;
 
-  const currentWeekStart = mondayOf(todayUTC());
+  const currentWeekStart = mondayOf(todayInTimeZone(timeZone));
   const weeklyGoal = user.weekly_commitment || 0;
 
   if (!user.streak_week_start) {
     // First time this user is tracked — nothing to reconcile yet.
     await pool.query(
-      `UPDATE users SET streak_week_start = $1 onboarding_week = $2 WHERE user_id = $3`,
+      `UPDATE users SET streak_week_start = $1, onboarding_week = $2 WHERE user_id = $3`,
       [toISODate(currentWeekStart), true, userId],
     );
     return;
   }
 
-  // if this is users onboarding week (1st week), then the app shall inform the user about it as well as
-  // being lienent on their streak
-  if (user.onboarding_week) {
-    const daysLeft = currentWeekStart.getUTCDate + 7 - todayUTC().getUTCDate();
-  }
-
   const trackedWeekStart = parseISODateUTC(user.streak_week_start);
   if (trackedWeekStart.getTime() >= currentWeekStart.getTime()) {
     return; // Still the same week — nothing to reconcile.
+  }
+
+  let onboardingWeek;
+  if (user.onboarding_week) {
+    // Check if user has finished their first week
+    if (diffInDays(trackedWeekStart, currentWeekStart) > 6) {
+      onboardingWeek = false;
+    }
   }
 
   // No goal configured (e.g. onboarding incomplete): opt this user out of
@@ -939,9 +953,16 @@ export async function reconcileStreak(userId) {
     `UPDATE users
         SET streak_week_start = $1,
             streak_grace_used = $2,
-            current_streak = CASE WHEN $3 THEN 0 ELSE current_streak END
-      WHERE user_id = $4`,
-    [toISODate(currentWeekStart), graceUsed, streakReset, userId],
+            current_streak = CASE WHEN $3 THEN 0 ELSE current_streak END,
+            onboarding_week = $4
+      WHERE user_id = $5`,
+    [
+      toISODate(currentWeekStart),
+      graceUsed,
+      streakReset,
+      onboardingWeek,
+      userId,
+    ],
   );
 }
 
@@ -953,10 +974,10 @@ export const getUserActivitySummary = async (req, res) => {
   }
 
   try {
-    await reconcileStreak(userId);
+    await reconcileStreak(userId, req.timeZone);
 
     const userResult = await pool.query(
-      `SELECT weekly_commitment, streak_grace_used FROM users WHERE user_id = $1`,
+      `SELECT weekly_commitment, streak_grace_used, onboarding_week FROM users WHERE user_id = $1`,
       [userId],
     );
     if (userResult.rows.length === 0) {
@@ -965,10 +986,7 @@ export const getUserActivitySummary = async (req, res) => {
     const workoutsGoal = userResult.rows[0].weekly_commitment || 0;
     const inGraceWeek = userResult.rows[0].streak_grace_used;
 
-    const now = new Date();
-    const today = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
+    const today = todayInTimeZone(req.timeZone);
 
     // Monthly grid: Monday-start weeks spanning the current calendar month.
     const monthStart = new Date(
@@ -1009,6 +1027,8 @@ export const getUserActivitySummary = async (req, res) => {
         estimateDurationMinutes(row.duration_minutes, Number(row.total_sets)),
       );
     }
+
+    const onboardingWeek = userResult.rows[0].onboarding_week;
 
     const grid = [];
     let totalWorkouts = 0;
@@ -1069,7 +1089,10 @@ export const getUserActivitySummary = async (req, res) => {
       7 - Math.round((today.getTime() - currentWeekStart.getTime()) / 86400000);
     const stillNeeded = Math.max(0, workoutsGoal - workoutsCompleted);
     const atRisk =
-      workoutsGoal > 0 && stillNeeded > 0 && stillNeeded >= daysRemaining;
+      !onboardingWeek &&
+      workoutsGoal > 0 &&
+      stillNeeded > 0 &&
+      stillNeeded >= daysRemaining;
 
     return res.status(200).json({
       monthly: {
@@ -1086,6 +1109,7 @@ export const getUserActivitySummary = async (req, res) => {
         avgSessionMinutes,
         atRisk,
         inGraceWeek,
+        onboardingWeek,
       },
     });
   } catch (error) {

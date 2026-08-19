@@ -86,7 +86,6 @@ export const createUser = async (req, res) => {
       `SELECT user_id FROM users WHERE user_id = $1`,
       [user_id],
     );
-    console.log(user.rows[0]);
     if (user.rows.length === 0) {
       return res.status(400).json({
         error: "Cannot find the user",

@@ -71,7 +71,7 @@ const createTables = async () => {
     streak_week_start DATE,
     streak_grace_used BOOLEAN NOT NULL DEFAULT FALSE,
     onboarded BOOLEAN NOT NULL DEFAULT FALSE,
-    onboarding_week BOOLEAN NOT NULL DEFAULT FALSE
+    onboarding_week BOOLEAN NOT NULL DEFAULT TRUE
   );
 
   CREATE TABLE IF NOT EXISTS Exercises (

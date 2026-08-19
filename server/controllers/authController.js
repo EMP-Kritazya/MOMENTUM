@@ -89,7 +89,7 @@ export async function getMe(req, res) {
   const userId = req.auth.userId ?? req.auth.id;
 
   try {
-    await reconcileStreak(userId);
+    await reconcileStreak(userId, req.timeZone);
 
     const result = await pool.query(
       `SELECT user_id, username, firstname, lastname, email, password_hash, role, current_streak, weekly_commitment, onboarded

@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.js";
 import { authenticateToken } from "./middleware/authenticateToken.js";
+import { resolveTimeZone } from "./middleware/resolveTimeZone.js";
 import userRouter from "./routes/users.js";
 import progressRouter from "./routes/progressInsight.js";
 import { connectDB } from "./config/database.js";
@@ -46,6 +47,7 @@ passport.use(GitHub);
 app.use(express.json());
 // Parses the authToken cookie into req.cookies for authenticateToken.
 app.use(cookieParser());
+app.use(resolveTimeZone);
 
 app.use("/auth", githubRouter);
 

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { pool } from "../config/database.js";
+import { todayInTimeZone, toISODate } from "./workoutSessions.js";
 
 function createInviteCode() {
   return randomBytes(4).toString("hex").toUpperCase();
@@ -106,20 +107,22 @@ export async function getGroupMembers(req, res) {
       return res.status(403).json({ message: "Group membership required" });
     }
 
+    const todayISO = toISODate(todayInTimeZone(req.timeZone));
+
     const result = await pool.query(
       `SELECT u.user_id,
               u.username,
               u.firstname,
               u.lastname,
               gm.is_admin,
-              gm.current_streak,
+              u.current_streak,
               gm.joined_at,
               CASE
                 WHEN EXISTS (
                   SELECT 1
                   FROM workoutsessions ws
                   WHERE ws.user_id = u.user_id
-                    AND ws.date = CURRENT_DATE
+                    AND ws.date = $2
                     AND ws.completed = TRUE
                 ) THEN 'done'
                 ELSE 'pending'
@@ -128,7 +131,7 @@ export async function getGroupMembers(req, res) {
        JOIN users u ON u.user_id = gm.user_id
        WHERE gm.group_id = $1
        ORDER BY gm.joined_at, gm.member_id`,
-      [groupId],
+      [groupId, todayISO],
     );
     return res.status(200).json(result.rows);
   } catch (error) {
