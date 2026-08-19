@@ -2,8 +2,6 @@
 
 ## List of Pages
 
-[👉🏾👉🏾👉🏾 List the pages you expect to have in your app, with a ⭐ next to pages you have wireframed]
-
 ## Wireframe 1: Onboarding 📝
 
 ![Onbaording to Momentum!](./images/Onboarding.png)

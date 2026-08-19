@@ -1,34 +1,78 @@
 # Momentum
 
-CodePath WEB103 Final Project
-
-Designed and developed by Kritazya Upreti, Johan Almanzar, Ngoc (Vy) Pham,
-and Joy Tran.
-
-- Deployed site: https://momentum-av8u.onrender.com
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-build-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-styling-06B6D4?logo=tailwindcss&logoColor=white)
 
 Momentum is a full-stack fitness consistency platform designed to help
 beginners and casual gym-goers build sustainable workout habits. It combines
 guided onboarding, workout tracking, and small accountability groups so users
 can focus on consistency instead of planning every detail themselves.
 
-## Tech stack
+**Live app:** https://momentum-z1ob.onrender.com
 
-### Frontend
+Idea by **Kritazya Upreti**. Designed and developed by **Kritazya Upreti**,
+**Johan Almanzar**, **Ngoc (Vy) Pham**, and **Joy Tran**.
 
-The app emphasizes long-term consistency over perfection. Users can track their progress through workout history, streaks, and personalized motivational insights while participating in small accountability groups that encourage members to stay committed without the distractions of a traditional social media platform.
+## Table of contents
 
-Our goal is to make working out feel simple, approachable, and rewarding so that users develop lasting fitness habits.
+- [Overview](#overview)
+- [Inspiration](#inspiration)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Project structure](#project-structure)
+- [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Environment variables](#environment-variables)
+  - [Database setup](#database-setup)
+  - [Running the app](#running-the-app)
+- [Testing](#testing)
+- [Available scripts](#available-scripts)
 
----
+## Overview
+
+The app emphasizes long-term consistency over perfection. Users can track
+their progress through workout history, streaks, and personalized
+motivational insights while participating in small accountability groups
+that encourage members to stay committed without the distractions of a
+traditional social media platform.
+
+Our goal is to make working out feel simple, approachable, and rewarding so
+that users develop lasting fitness habits.
 
 ## Inspiration
 
-Many fitness apps assume users already know how to structure workouts, understand proper training splits, or stay motivated independently. For beginners, this often creates analysis paralysis and causes them to lose consistency before building a routine.
+Many fitness apps assume users already know how to structure workouts,
+understand proper training splits, or stay motivated independently. For
+beginners, this often creates analysis paralysis and causes them to lose
+consistency before building a routine.
 
-Momentum is inspired by habit-building products such as Duolingo and GitHub contribution streaks, combined with the simplicity of having a personal coach who tells you exactly what to do each day. Instead of rewarding users for lifting the most weight, Momentum celebrates consistency, progress, and small daily victories.
+Momentum is inspired by habit-building products such as Duolingo and GitHub
+contribution streaks, combined with the simplicity of having a personal
+coach who tells you exactly what to do each day. Instead of rewarding users
+for lifting the most weight, Momentum celebrates consistency, progress, and
+small daily victories.
 
----
+## Features
+
+- **Guided onboarding** — captures experience level, fitness goal, and
+  available equipment to personalize every workout.
+- **Auto-generated daily workouts** — rotates through upper/lower/full-body
+  splits, filtered by the user's equipment and experience.
+- **Streaks & weekly goals** — a forgiving weekly-commitment streak with a
+  one-week grace period before a streak resets.
+- **Activity summary** — a monthly calendar grid and weekly bar chart of
+  completed workouts.
+- **Workout history** — filterable by muscle group and completed/skipped
+  status.
+- **Accountability groups** — small groups with invite codes and per-member
+  daily status.
+- **Authentication** — email/password sign-up plus GitHub OAuth, backed by
+  an httpOnly JWT cookie.
+- **Admin panel** — manage exercises and workout templates.
 
 ## Tech stack
 
@@ -38,6 +82,7 @@ Momentum is inspired by habit-building products such as Duolingo and GitHub cont
 - React Router
 - Tailwind CSS
 - Vite
+- Vitest + React Testing Library
 
 ### Backend
 
@@ -45,209 +90,116 @@ Momentum is inspired by habit-building products such as Duolingo and GitHub cont
 - Express
 - PostgreSQL
 - JWT authentication in httpOnly cookies
+- Passport (GitHub OAuth)
+- Vitest
 
-## Completed features
+## Project structure
 
-### ✅ Personalized onboarding
+```
+MOMENTUM/
+├── client/            React + Vite frontend
+│   ├── src/
+│   │   ├── api/       fetch wrappers for the server API
+│   │   ├── components/
+│   │   ├── context/    AuthProvider / auth context
+│   │   ├── pages/
+│   │   └── utils/
+│   └── tests/
+└── server/            Express + PostgreSQL backend
+    ├── config/         DB connection, schema reset, seeding, auth strategy
+    ├── controllers/
+    ├── middleware/
+    ├── routes/
+    └── tests/
+```
 
-Members complete a multi-step form that collects their profile, fitness goal,
-experience level, workout location, equipment, and weekly commitment. The
-server validates submitted values before saving them and authenticates the new
-member with an httpOnly cookie.
+## Getting started
 
-https://github.com/user-attachments/assets/5eeecaef-6076-4e73-8bdc-24f106df94a4
+### Prerequisites
 
-### ✅ Daily Workout Generator
+- Node.js (v20+ recommended)
+- A PostgreSQL database (local or hosted)
 
-Authenticated members can create a group, receive an invite code, join another
-group, see member streak and daily-completion information, and leave a group.
-Group administrators can update or delete only groups they administer.
-
-<img width="1389" height="673" alt="generator" src="./milestones/gifs/workout_generator.png" />
-
-### ✅ Workout Progress Dashboard
-
-<!-- TODO: Replace this comment with the uploaded administrator GIF. -->
-
-<img width="1389" height="673" alt="progress" src="./milestones/gifs/progress.png" />
-
-### ✅ Workout History Management
-
-Users can view, update, and remove completed workout logs, allowing them to maintain an accurate record of their fitness progress.
-
-<img width="1389" height="673" alt="history_demo" src="https://github.com/user-attachments/assets/5f8a7843-5921-4a74-9a8e-3efdcc4b92f2" />
-
-### ✅ Accountability groups
-
-Authenticated members can create a group, receive an invite code, join another
-group, see member streak and daily-completion information, and leave a group.
-Group administrators can update or delete only groups they administer.
-
-<img src='./milestones/gifs/AccountabilityGroup.gif' title='Video Walkthrough' alt='Video Walkthrough' />
-
-### ✅ Exercise Library
-
-Users can loads exercises from the server, supports search, muscle filtering It also displays equipment and difficulty.
-
-<img src='./milestones/gifs/ExerciseLibraryDemo.gif' title='library' alt='Video Walkthrough' />
-
-### ✅ Administrator authentication and authorization (Stretch feature)
-
-Administrators can log in with server-validated credentials. Protected
-exercise mutations require both a valid authentication cookie and the
-administrator role.
-
-<img src='./milestones/gifs/admin.gif' title='Video Walkthrough' alt='admin' />
-
-### ✅ Workout-history filtering and detail modal (Custom Feature)
-
-The workout-history interface supports status and muscle filters, date sorting,
-pagination, responsive table/card views, error states, and a same-page workout
-detail modal.
-
-<img width="1389" height="673" alt="history_demo" src="https://github.com/user-attachments/assets/5f8a7843-5921-4a74-9a8e-3efdcc4b92f2" />
-
-## Local installation
-
-### ✅ Exercise Library
-
-Users can browse a searchable exercise database containing exercise descriptions, target muscle groups, difficulty levels, and equipment requirements.
-
-<img src='./milestones/gifs/ExerciseLibraryDemo.gif' title='Video Walkthrough' alt='Video Walkthrough' />
-
----
-
-### ✅Workout Filtering & Sorting (Custom Feature)
-
-Users can filter workouts by duration, muscle group, equipment, or difficulty and sort workouts based on recency or completion status.
-
-<img src='./milestones/gifs/filter.png' title='filter' alt='filter and sort' />
-
----
-
-# Stretch Features
-
-- ✅ User authentication using JWT
-  - Authentication uses signed JWTs stored in httpOnly cookies.
-  - Member login, onboarding authentication, admin login, logout, and current-user lookup exist.
-
-- ✅ Loading indicators
-  - Dashboard cards use loading skeletons.
-  - Exercise Library uses a loading spinner.
-  - History, groups, authentication, and workout pages show loading states.
-
-- ✅ Disable buttons during form submissions
-  - Onboarding, login, admin login, group creation, and group joining prevent duplicate submissions.
-
----
-
-# Installation Instructions
-
-## Features still in progress
-
-- Connecting the dashboard prototype to live API data
-- Completing the Exercise Library interface
-- Generating personalized daily workouts and starter plans
-- Adding complete frontend controls for workout creation, updates, and deletion
-
-These features are intentionally not presented as completed grading features.
-
-## Database relationships
-
-Momentum includes:
-
-- One-to-many: one user has many workout sessions.
-- Many-to-many: users belong to accountability groups through `GroupMembers`.
-- Many-to-many: workout templates contain exercises through
-  `WorkoutTemplateExercises`.
-- Unique join-table membership: `UNIQUE(group_id, user_id)` prevents duplicate
-  accountability-group membership.
-
-## API highlights
-
-- RESTful GET, POST, PATCH, and DELETE endpoints for users, exercises, workout
-  templates, workout sessions, and accountability groups.
-- Custom `POST /api/groups/join` endpoint for invite-code membership.
-- Server-side onboarding validation with safe error responses.
-- Authenticated identity derived from a signed cookie instead of browser-sent
-  user IDs.
-- Group-level authorization through `GroupMembers.is_admin`.
-
-## Local installation
-
-1. Clone the repository and install dependencies.
+### Installation
 
 ```bash
-git clone <repository-url>
-cd MOMENTUM/client
-npm install
-cd ../server
-npm install
+git clone <this-repo-url>
+cd MOMENTUM
+
+cd server && npm install
+cd ../client && npm install
 ```
 
-2. Create `server/.env` with the required local values.
+### Environment variables
 
-```env
-PGUSER=your_postgres_user
-PGPASSWORD=your_postgres_password
-PGHOST=localhost
-PGPORT=5432
-PGDATABASE=your_database
-PGSSL=false
-JWT_SECRET=replace_with_a_long_random_secret
-ADMIN_USERNAME=admin
-ADMIN_firstname=Momentum
-ADMIN_lastname=Admin
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=replace_with_a_secure_password
-CLIENT_URL=http://localhost:5173
-```
+Create `server/.env` (see `server/.env.example` for the full template):
 
-3. Reset and seed the local database intentionally.
+| Variable                                                                               | Description                                                                     |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                         | Full Postgres connection string. Takes priority over the `PG*` variables below. |
+| `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`                               | Individual connection settings, used when `DATABASE_URL` isn't set.             |
+| `PGSSL`                                                                                | Set to `true` to connect over SSL (e.g. for a hosted database).                 |
+| `CLIENT_URL`                                                                           | The frontend origin, used for CORS.                                             |
+| `JWT_SECRET`                                                                           | Secret used to sign the auth cookie's JWT.                                      |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`                                            | GitHub OAuth app credentials.                                                   |
+| `ADMIN_USERNAME`, `ADMIN_firstname`, `ADMIN_lastname`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Seed values for the initial admin account, used by `npm run reset`.             |
+| `SEED_DEMO_DATA`                                                                       | Set to `true` to seed demo users/workouts as part of `npm run reset`.           |
+| `PORT`                                                                                 | Port the server listens on (defaults to `3001`).                                |
+
+Create `client/.env`:
+
+| Variable       | Description                                            |
+| -------------- | ------------------------------------------------------ |
+| `VITE_API_URL` | Base URL of the server API, used in production builds. |
+
+### Database setup
+
+With `server/.env` configured, create the schema (and optionally seed an
+admin account / demo data):
 
 ```bash
 cd server
 npm run reset
 ```
 
-This command deletes existing application data. Do not use it against a
-production database.
-
-4. Start the backend.
-
-5. In another terminal, start the frontend.
+### Running the app
 
 ```bash
-cd client
-npm run dev
+# terminal 1 — server (http://localhost:3001)
+cd server && npm run dev
+
+# terminal 2 — client (http://localhost:5173)
+cd client && npm run dev
 ```
 
-6. Open http://localhost:5173.
+## Testing
 
-## Render configuration
-
-### Server Web Service
-
-```text
-Root Directory: server
-Build Command: npm install
-Start Command: npm run reset & npm run start
-Health Check: /api/health
+```bash
+cd server && npm test
+cd client && npm test
 ```
 
-Required environment variables include `DATABASE_URL`, `JWT_SECRET`,
-`CLIENT_URL`, `NODE_ENV=production`, and the administrator seed values when
-running the reset command intentionally.
+## Available scripts
 
-### Client Static Site
+### `server/`
 
-```text
-Root Directory: client
-Build Command: npm install && npm run dev
-Publish Directory: dist
-VITE_API_URL=https://momentum-bxgh.onrender.com
-```
+| Script                  | Description                            |
+| ----------------------- | -------------------------------------- |
+| `npm run dev`           | Start the API with auto-reload.        |
+| `npm start`             | Start the API.                         |
+| `npm run reset`         | Drop and recreate the database schema. |
+| `npm run seed:demo`     | Seed demo users and workout data.      |
+| `npm test`              | Run the test suite once.               |
+| `npm run test:watch`    | Run tests in watch mode.               |
+| `npm run test:coverage` | Run tests with coverage.               |
 
-## Final walkthrough
+### `client/`
 
-https://www.loom.com/share/afab2e6ad9744cc896aa283a8c1d3f4c
+| Script               | Description                         |
+| -------------------- | ----------------------------------- |
+| `npm run dev`        | Start the Vite dev server.          |
+| `npm run build`      | Build for production.               |
+| `npm run preview`    | Preview a production build locally. |
+| `npm test`           | Run the test suite once.            |
+| `npm run test:watch` | Run tests in watch mode.            |
+| `npm run lint`       | Lint the frontend source.           |

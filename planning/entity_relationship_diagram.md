@@ -1,7 +1,5 @@
 # Entity Relationship Diagram
 
-Reference the Creating an Entity Relationship Diagram final project guide in the course portal for more information about how to complete this deliverable.
-
 ## Create the List of Tables
 
 Our database consists of 4 main entity tables, 1 dynamic tracking table, and 2 junction tables. This structure supports automated workout plan generation based on onboarding preferences, history tracking, and group streaks:
