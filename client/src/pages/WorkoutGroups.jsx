@@ -15,6 +15,7 @@ import GroupCard from "../components/groups/GroupCard.jsx";
 import JoinGroupForm from "../components/groups/JoinGroupForm.jsx";
 import ActionToast from "../components/ui/ActionToast.jsx";
 import { useAuth } from "../context/authContext.js";
+import LoaderScreen from "../components/utilities/LoaderScreen.jsx";
 
 export default function WorkoutGroups() {
   const { user, loading: authLoading } = useAuth();
@@ -170,21 +171,21 @@ export default function WorkoutGroups() {
   }
 
   if (authLoading) {
-    return <p className="p-6 text-momentum-muted">Loading account...</p>;
+    return <LoaderScreen />;
   }
 
-  if (!user) {
-    return (
-      <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
-        <h1 className="font-display text-4xl text-white">
-          Accountability Groups
-        </h1>
-        <p className="mt-6 rounded-2xl border border-momentum-border bg-momentum-panel p-6 text-momentum-muted">
-          Complete onboarding before joining accountability groups.
-        </p>
-      </section>
-    );
-  }
+  // if (!user) {
+  //   return (
+  //     <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
+  //       <h1 className="font-display text-4xl text-white">
+  //         Accountability Groups
+  //       </h1>
+  //       <p className="mt-6 rounded-2xl border border-momentum-border bg-momentum-panel p-6 text-momentum-muted">
+  //         Complete onboarding before joining accountability groups.
+  //       </p>
+  //     </section>
+  //   );
+  // }
 
   return (
     <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
