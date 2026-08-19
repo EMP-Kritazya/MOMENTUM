@@ -1,8 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   mondayOf,
   addDays,
   toISODate,
+  todayInTimeZone,
 } from "../controllers/workoutSessions.js";
 
 const utcDate = (y, m, d) => new Date(Date.UTC(y, m - 1, d));
@@ -50,5 +51,30 @@ describe("mondayOf", () => {
 describe("toISODate", () => {
   it("formats a UTC date as YYYY-MM-DD", () => {
     expect(toISODate(utcDate(2026, 1, 5))).toBe("2026-01-05");
+  });
+});
+
+describe("todayInTimeZone", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("rolls to the next day ahead of UTC before UTC itself does", () => {
+    // 23:30 UTC on March 10 is already 05:00 on March 11 in Kolkata (+5:30).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-10T23:30:00Z"));
+
+    expect(toISODate(todayInTimeZone("UTC"))).toBe("2026-03-10");
+    expect(toISODate(todayInTimeZone("Asia/Kolkata"))).toBe("2026-03-11");
+  });
+
+  it("stays on the previous day behind UTC after UTC has already rolled over", () => {
+    // 23:30 UTC on March 10 is still 15:30 on March 10 in Los Angeles (-8).
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-10T23:30:00Z"));
+
+    expect(toISODate(todayInTimeZone("America/Los_Angeles"))).toBe(
+      "2026-03-10",
+    );
   });
 });
