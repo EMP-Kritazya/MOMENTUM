@@ -2,7 +2,7 @@ import { Router } from "express";
 import session from "express-session";
 import passport from "passport";
 import { GitHub } from "../config/auth.js";
-import { createToken, setAuthCookie } from "../controllers/authController.js";
+import { createToken } from "../controllers/authController.js";
 import { CLIENT_URL } from "../config/urls.js";
 import MongoStore from "connect-mongo";
 
@@ -44,9 +44,15 @@ router.get("/github/callback", (req, res, next) => {
       );
     }
 
+    // Deliberately not setting the cookie here: a redirect response is
+    // exactly the shape some browsers (Brave) flag as cross-site "bounce
+    // tracking" and silently drop the cookie from, even with SameSite=None;
+    // Secure set correctly. The client exchanges this token for the real
+    // cookie via a direct fetch instead — see sessionFromToken.
     const token = createToken(user.user_id, user.role);
-    setAuthCookie(res, token);
-    return res.redirect(`${CLIENT_URL}/dashboard`);
+    return res.redirect(
+      `${CLIENT_URL}/auth/callback?token=${encodeURIComponent(token)}`,
+    );
   })(req, res, next);
 });
 

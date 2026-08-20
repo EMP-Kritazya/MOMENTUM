@@ -12,6 +12,7 @@ import ActiveWorkout from "./pages/ActiveWorkout";
 import AdminTemplatesPage from "./pages/AdminTemplatesPage";
 import RequireAdminRoute from "./components/auth/RequireAdminRoute";
 import SignUpPage from "./pages/SignUpPage";
+import GithubCallbackPage from "./pages/GithubCallbackPage";
 
 // 504 - min s-size
 
@@ -23,6 +24,7 @@ export default function App() {
       <Route path="/signup" element={<SignUpPage />}></Route>
       <Route path="/admin/login" element={<AdminLoginPage />}></Route>
       <Route path="/onboarding" element={<OnboardingPage />}></Route>
+      <Route path="/auth/callback" element={<GithubCallbackPage />} />
       {/* Full-screen focused workout runner (no sidebar). */}
       <Route path="/workout/active" element={<ActiveWorkout />} />
 

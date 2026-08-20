@@ -29,3 +29,11 @@ export function signUpUser(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+// Exchanges the token from a GitHub OAuth redirect for the httpOnly auth cookie, set as this fetch's response rather than a redirect.
+export function establishGithubSession(token) {
+  return apiRequest("/api/auth/session", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}

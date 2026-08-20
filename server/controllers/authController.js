@@ -109,10 +109,26 @@ export async function getMe(req, res) {
 export function logout(req, res) {
   res.clearCookie("authToken", {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: isProduction ? "none" : "lax",
+    secure: isProduction,
   });
   return res.status(200).json({ message: "Logged out" });
+}
+
+export function sessionFromToken(req, res) {
+  const { token } = req.body;
+  if (!token) {
+    return res.status(400).json({ message: "token is required" });
+  }
+
+  try {
+    jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+
+  setAuthCookie(res, token);
+  return res.status(200).json({ message: "Session established" });
 }
 
 // Authenticates a regular user via username + email

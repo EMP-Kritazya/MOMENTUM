@@ -6,6 +6,7 @@ import {
   logout,
   loginUser,
   signUpUser,
+  sessionFromToken,
 } from "../controllers/authController.js";
 
 const router = Router();
@@ -22,6 +23,10 @@ router.post("/logout", logout);
 router.post("/login", loginUser);
 
 router.post("/signup", signUpUser);
+
+// Exchanges a token minted by the GitHub OAuth callback redirect for the
+// httpOnly auth cookie via a direct fetch (see sessionFromToken).
+router.post("/session", sessionFromToken);
 
 router.get("/login/success", (req, res) => {
   if (req.user) {
