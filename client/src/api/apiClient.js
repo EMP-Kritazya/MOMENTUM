@@ -1,10 +1,4 @@
-// Uses the deployed API URL when configured, otherwise the local server.
-// const API_URL = import.meta.env.PROD
-//   ? "https://momentum-bxgh.onrender.com"
-//   : "http://localhost:3001";
-const API_URL = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL
-  : "http://localhost:3001";
+import { API_URL } from "../config/urls.js";
 
 // Lets the server compute "today" against the user's own calendar day instead of UTC
 const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;

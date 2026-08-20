@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { pool } from "../config/database.js";
 import { reconcileStreak } from "./workoutSessions.js";
-import "../config/dotenv.js";
+import { isProduction } from "../config/urls.js";
 
 const SESSION_DURATION_MS = 60 * 60 * 1000; // 60 minutes
 
@@ -11,10 +11,6 @@ export const createToken = (userId, role = "member") => {
     expiresIn: SESSION_DURATION_MS / 1000, // jsonwebtoken accepts seconds
   });
 };
-
-const isProduction =
-  process.env.NODE_ENV?.trim() === "production" ||
-  process.env.RENDER === "true";
 
 export const setAuthCookie = (res, token) => {
   res.cookie("authToken", token, {

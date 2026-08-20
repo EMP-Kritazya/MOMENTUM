@@ -1,13 +1,11 @@
 import { Strategy as GitHubStrategy } from "passport-github2";
 import { pool } from "./database.js";
-import "./dotenv.js";
+import { GITHUB_CALLBACK_URL } from "./urls.js";
 
 const options = {
   clientID: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  callbackURL:
-    process.env.GITHUB_CALLBACK_URL ??
-    "http://localhost:3001/auth/github/callback",
+  callbackURL: GITHUB_CALLBACK_URL,
 };
 
 const verify = async (accessToken, refreshToken, profile, callback) => {
