@@ -4,6 +4,8 @@ import passport from "passport";
 import { GitHub } from "../config/auth.js";
 import { createToken, setAuthCookie } from "../controllers/authController.js";
 import { CLIENT_URL } from "../config/urls.js";
+import MongoStore from "connect-mongo";
+import { createClient } from "redis";
 
 const router = Router();
 
@@ -12,6 +14,10 @@ router.use(
     secret: "@jaiq&81ka-+!7auq}'a/{p0s",
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGODB_URI,
+      ttl: 14 * 24 * 60 * 60, // Session expiration in 14 days
+    }),
   }),
 );
 
