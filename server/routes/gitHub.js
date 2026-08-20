@@ -46,7 +46,7 @@ router.get("/github/callback", (req, res, next) => {
 
     const token = createToken(user.user_id, user.role);
     setAuthCookie(res, token);
-    return res.redirect(`${CLIENT_URL}/dashboard`);
+    return res.redirect(`${CLIENT_URL}/`);
   })(req, res, next);
 });
 

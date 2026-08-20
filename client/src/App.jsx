@@ -13,6 +13,8 @@ import AdminTemplatesPage from "./pages/AdminTemplatesPage";
 import RequireAdminRoute from "./components/auth/RequireAdminRoute";
 import SignUpPage from "./pages/SignUpPage";
 
+// 504 - min s-size
+
 export default function App() {
   return (
     <Routes>
