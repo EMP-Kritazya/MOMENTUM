@@ -12,20 +12,16 @@ import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
 import groupRouter from "./routes/groups.js";
+import { CLIENT_URL } from "./config/urls.js";
 
 import githubRouter from "./routes/gitHub.js";
 
 // create express app
 const app = express();
 
-const allowedOrigins = [
-  "https://momentum-av8u.onrender.com",
-  process.env.CLIENT_URL,
-].filter(Boolean);
-
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: CLIENT_URL,
     // Required so the browser will send/accept the httpOnly authToken cookie.
     credentials: true,
   }),
