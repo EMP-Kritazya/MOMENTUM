@@ -42,6 +42,7 @@ const dropAllTables = async () => {
         DROP TABLE IF EXISTS WorkoutTemplateExercises CASCADE;
         DROP TABLE IF EXISTS AccountabilityGroups CASCADE;
         DROP TABLE IF EXISTS GroupMembers CASCADE;
+        DROP TABLE IF EXISTS user_oauth_accounts CASCADE;
     `;
 
   try {
@@ -56,11 +57,11 @@ const createTables = async () => {
   const query = `
   CREATE TABLE IF NOT EXISTS Users (
     user_id SERIAL PRIMARY KEY,
-    firstname VARCHAR(50) NOT NULL,
-    lastname VARCHAR(50) NOT NULL,
+    firstname VARCHAR(50),
+    lastname VARCHAR(50),
     username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    password_hash VARCHAR(255),
     role VARCHAR(20) NOT NULL DEFAULT 'member'
       CHECK (role IN ('member', 'admin')),
     fitness_goal VARCHAR(50),
@@ -172,6 +173,16 @@ const createTables = async () => {
       ON UPDATE CASCADE
       ON DELETE RESTRICT
 
+  );
+
+  CREATE TABLE IF NOT EXISTS user_oauth_accounts(
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL,
+    provider_user_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE(provider, provider_user_id)
   );
 
   CREATE INDEX IF NOT EXISTS idx_groupmembers_user_id

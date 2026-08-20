@@ -142,6 +142,7 @@ Create `server/.env` (see `server/.env.example` for the full template):
 | `CLIENT_URL`                                                                           | The frontend origin, used for CORS.                                             |
 | `JWT_SECRET`                                                                           | Secret used to sign the auth cookie's JWT.                                      |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`                                            | GitHub OAuth app credentials.                                                   |
+| `GITHUB_CALLBACK_URL`                                                                  | Where GitHub redirects after login, e.g. `http://localhost:3001/auth/github/callback` for local dev. |
 | `ADMIN_USERNAME`, `ADMIN_firstname`, `ADMIN_lastname`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Seed values for the initial admin account, used by `npm run reset`.             |
 | `SEED_DEMO_DATA`                                                                       | Set to `true` to seed demo users/workouts as part of `npm run reset`.           |
 | `PORT`                                                                                 | Port the server listens on (defaults to `3001`).                                |
