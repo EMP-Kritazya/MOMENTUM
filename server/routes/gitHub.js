@@ -5,7 +5,6 @@ import { GitHub } from "../config/auth.js";
 import { createToken, setAuthCookie } from "../controllers/authController.js";
 import { CLIENT_URL } from "../config/urls.js";
 import MongoStore from "connect-mongo";
-import { createClient } from "redis";
 
 const router = Router();
 
