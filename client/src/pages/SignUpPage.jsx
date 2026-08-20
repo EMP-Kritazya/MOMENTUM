@@ -6,6 +6,7 @@ import OnboardingHeader from "../components/onboarding/OnboardingHeader";
 import TextInput from "../components/ui/TextInput";
 import Button from "../components/ui/Button";
 import LoaderScreen from "../components/utilities/LoaderScreen.jsx";
+import GithubButton from "../components/utilities/GithubButton.jsx";
 
 const initialValues = {
   firstname: "",
@@ -129,6 +130,16 @@ function SignUpPage() {
                 Log In
               </Link>
             </p>
+
+            {/* -Or- */}
+            <div className="flex items-center gap-3 my-4 mt-10">
+              <div className="h-px flex-1 bg-white" />
+
+              <span className="text-sm text-white">or</span>
+
+              <div className="h-px flex-1 bg-white" />
+            </div>
+            <GithubButton />
           </div>
           <div className="w-[60%]">
             <form

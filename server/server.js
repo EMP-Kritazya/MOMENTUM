@@ -12,9 +12,7 @@ import exerciseRouter from "./routes/exercises.js";
 import workoutTemplateRouter from "./routes/workoutTemplates.js";
 import workoutSessionRouter from "./routes/workoutSessions.js";
 import groupRouter from "./routes/groups.js";
-import passport from "passport";
-import session from "express-session";
-import { GitHub } from "./config/auth.js";
+
 import githubRouter from "./routes/gitHub.js";
 
 // create express app
@@ -32,17 +30,6 @@ app.use(
     credentials: true,
   }),
 );
-
-app.use(
-  session({
-    secret: "@jaiq&81kap0s",
-    resave: false,
-    saveUninitialized: false,
-  }),
-);
-
-app.use(passport.initialize());
-passport.use(GitHub);
 
 app.use(express.json());
 // Parses the authToken cookie into req.cookies for authenticateToken.
