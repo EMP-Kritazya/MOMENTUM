@@ -456,7 +456,7 @@ export const todaysSession = async (req, res) => {
 
     // Find the last workout
     const previous = await pool.query(
-      `SELECT session_id, template_id, completed
+      `SELECT *
          FROM workoutsessions
         WHERE user_id = $1
         ORDER BY date DESC, session_id DESC
@@ -467,6 +467,11 @@ export const todaysSession = async (req, res) => {
 
     // if the previous workout isn't completed then we generate a rolled over flag, and
     const rolledOver = previous.rows.length > 0 && !previous.rows[0].completed;
+
+    // We don't wanna skip workouts even if not completed
+    if (rolledOver) {
+      return res.status(201).json(await loadWorkoutPayload(previous));
+    }
 
     const session = await createTemplateExercises(
       lastSessionId,
