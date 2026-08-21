@@ -4,6 +4,7 @@ import {
   parseUserEquipment,
   mapUserEquipment,
   fillSlots,
+  unfilledSlots,
   shuffle,
   estimateDurationMinutes,
 } from "../controllers/workoutSessions.js";
@@ -135,6 +136,40 @@ describe("fillSlots", () => {
 
   it("returns an empty list when given no candidates", () => {
     expect(fillSlots([], ["chest", "lats"])).toEqual([]);
+  });
+});
+
+describe("unfilledSlots", () => {
+  const chosenExercise = (id, muscle) => ({
+    exercise_id: id,
+    target_muscle: muscle,
+  });
+
+  it("returns nothing when every slot was filled", () => {
+    const chosen = [chosenExercise(1, "chest"), chosenExercise(2, "lats")];
+    expect(unfilledSlots(chosen, ["chest", "lats"])).toEqual([]);
+  });
+
+  it("reports a slot as unfilled when its muscle has no chosen exercise", () => {
+    // The bug this guards against: an advanced user with only dumbbells
+    // may have zero intermediate/expert biceps exercises, so fillSlots
+    // skips that slot entirely — it must be reported as still needed
+    // rather than silently dropped.
+    const chosen = [chosenExercise(1, "chest")];
+    expect(unfilledSlots(chosen, ["chest", "biceps"])).toEqual(["biceps"]);
+  });
+
+  it("only reports the shortfall for a muscle with repeated slots", () => {
+    // Lower split lists quadriceps/hamstrings twice each; one chosen
+    // exercise per muscle should leave exactly one repeat unfilled.
+    const chosen = [chosenExercise(1, "quadriceps")];
+    expect(
+      unfilledSlots(chosen, ["quadriceps", "quadriceps", "hamstrings"]),
+    ).toEqual(["quadriceps", "hamstrings"]);
+  });
+
+  it("returns every slot when nothing was chosen", () => {
+    expect(unfilledSlots([], ["chest", "lats"])).toEqual(["chest", "lats"]);
   });
 });
 

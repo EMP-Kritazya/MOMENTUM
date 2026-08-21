@@ -127,6 +127,27 @@ async function queryCandidates(
   return result.rows;
 }
 
+export function unfilledSlots(chosen, slots) {
+  const remainingPerMuscle = new Map();
+  for (const exercise of chosen) {
+    remainingPerMuscle.set(
+      exercise.target_muscle,
+      (remainingPerMuscle.get(exercise.target_muscle) ?? 0) + 1,
+    );
+  }
+
+  const unfilled = [];
+  for (const muscle of slots) {
+    const remaining = remainingPerMuscle.get(muscle) ?? 0;
+    if (remaining > 0) {
+      remainingPerMuscle.set(muscle, remaining - 1);
+    } else {
+      unfilled.push(muscle);
+    }
+  }
+  return unfilled;
+}
+
 export function fillSlots(candidates, slots) {
   const pools = new Map();
   for (const exercise of candidates) {
@@ -251,14 +272,18 @@ async function createTemplateExercises(
 
     const minExercises = Math.min(4, slots.length);
     if (chosen.length < minExercises) {
+      const stillNeeded = unfilledSlots(chosen, slots);
       const relaxed = await queryCandidates(
         client,
         muscles,
         equipment,
         ALL_DIFFICULTIES,
-        [],
+        [
+          ...previousExerciseIds,
+          ...chosen.map((exercise) => exercise.exercise_id),
+        ],
       );
-      chosen = fillSlots(relaxed, slots);
+      chosen = [...chosen, ...fillSlots(relaxed, stillNeeded)];
     }
 
     if (chosen.length === 0) {
