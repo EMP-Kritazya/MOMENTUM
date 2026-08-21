@@ -9,8 +9,13 @@ export function CurrentExerciseCard({
   onComplete,
 }) {
   return (
-    <section className="mt-8 rounded-3xl border border-momentum-border bg-momentum-panel p-6 sm:p-8">
-      <div className="flex items-start justify-between">
+    <section className="relative overflow-hidden rounded-3xl border border-momentum-border bg-momentum-panel p-6 sm:p-8">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-[#273410] blur-3xl"
+      />
+
+      <div className="relative flex items-start justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.15em] text-momentum-muted">
             Current Exercise
@@ -35,7 +40,10 @@ export function CurrentExerciseCard({
           {sets} x {reps}
         </span>
       </div>
-      <PerSet sets={sets} reps={reps} onComplete={onComplete} />
+
+      <div className="relative">
+        <PerSet sets={sets} reps={reps} onComplete={onComplete} />
+      </div>
     </section>
   );
 }

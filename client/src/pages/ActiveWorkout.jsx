@@ -6,6 +6,7 @@ import { toTodayWorkout } from "../utils/toTodayWorkout";
 import { getUserWorkout, updateExerciseCompletion } from "../api/usersApi";
 import { CurrentExerciseCard } from "../components/activeWorkout/CurrentExerciseCard";
 import { CurrentExerciseHeader } from "../components/activeWorkout/CurrentExerciseHeader";
+import { ExerciseMediaPanel } from "../components/activeWorkout/ExerciseMediaPanel";
 import { useAuth } from "../context/authContext";
 import LoaderScreen from "../components/utilities/LoaderScreen";
 
@@ -50,13 +51,17 @@ function CompletedList({ exercises }) {
 
 export default function ActiveWorkout() {
   const navigate = useNavigate();
-  const { refresh } = useAuth();
+  const { loading, user, refresh } = useAuth();
   const [workout, setWorkout] = useState(null);
   const [exerciseQueue, setExerciseQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [status, setStatus] = useState("loading"); // "loading" | "ready" | "error"
   const [error, setError] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!loading && !user) navigate("/", { replace: true });
+  }, [loading, navigate, user]);
 
   useEffect(() => {
     let active = true;
@@ -234,8 +239,7 @@ export default function ActiveWorkout() {
 
   return (
     <div className="min-h-screen bg-momentum-bg text-white">
-      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-6 py-6">
-        {/* Header */}
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-6 sm:px-6">
         <CurrentExerciseHeader
           completed={completed}
           started={started}
@@ -243,7 +247,7 @@ export default function ActiveWorkout() {
           elapsedLabel={started ? formatElapsed(elapsedSeconds) : null}
           onExit={() => navigate("/dashboard")}
         />
-        {/* ── Overall progress bar ───────────────────────────────────────── */}
+        {/* Progress Bar */}
         <div
           className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/5"
           role="progressbar"
@@ -258,92 +262,103 @@ export default function ActiveWorkout() {
           />
         </div>
 
-        <CurrentExerciseCard
-          key={currExercise.templateExerciseId}
-          exerciseName={currExercise.name}
-          targetMuscle={currExercise.target_muscle}
-          sets={currExercise.sets}
-          reps={currExercise.reps}
-          onComplete={() =>
-            handleExerciseComplete(currExercise.templateExerciseId)
-          }
-        />
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+          <CurrentExerciseCard
+            key={currExercise.templateExerciseId}
+            exerciseName={currExercise.name}
+            targetMuscle={currExercise.target_muscle}
+            sets={currExercise.sets}
+            reps={currExercise.reps}
+            onComplete={() =>
+              handleExerciseComplete(currExercise.templateExerciseId)
+            }
+          />
 
-        {/* ── Up next (rest of the workout) ──────────────────────────────── */}
-        <section className="mt-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.15em] text-momentum-muted">
-            Up Next
-          </p>
-          <ol className="mt-3 space-y-2">
-            {upNextExercises.map((exercise, index) => (
-              <li
-                key={exercise.templateExerciseId}
-                className="flex items-center gap-4 rounded-2xl border border-momentum-border/60 px-4 py-3 text-momentum-muted"
-              >
-                <span className="font-mono text-xs text-momentum-lime">
-                  {String(index + 2).padStart(2, "0")}
-                </span>
-                <span className="font-medium">{exercise.name}</span>
-                <span className="ml-auto font-mono text-sm">
-                  {exercise.sets} × {exercise.reps}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
+          <ExerciseMediaPanel
+            key={`${currExercise.templateExerciseId}-media`}
+            exerciseName={currExercise.name}
+            imageUrls={currExercise.imageUrls}
+            instructions={currExercise.instructions}
+          />
+        </div>
 
-        <CompletedList exercises={completedExercises} />
+        <div className="mx-auto w-full max-w-3xl">
+          {/* Rest of the workout */}
+          <section className="mt-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-momentum-muted">
+              Up Next
+            </p>
+            <ol className="mt-3 space-y-2">
+              {upNextExercises.map((exercise, index) => (
+                <li
+                  key={exercise.templateExerciseId}
+                  className="flex items-center gap-4 rounded-2xl border border-momentum-border/60 px-4 py-3 text-momentum-muted"
+                >
+                  <span className="font-mono text-xs text-momentum-lime">
+                    {String(index + 2).padStart(2, "0")}
+                  </span>
+                  <span className="font-medium">{exercise.name}</span>
+                  <span className="ml-auto font-mono text-sm">
+                    {exercise.sets} × {exercise.reps}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
 
-        {/* ── Bottom controls ────────────────────────────────────────────── */}
-        {(() => {
-          const previousIndex = exerciseQueue
-            .slice(0, currentIndex)
-            .map((_, index) => index)
-            .reverse()
-            .find((index) => !exerciseQueue[index].completed);
-          const nextIndex = exerciseQueue.findIndex(
-            (exercise, index) => index > currentIndex && !exercise.completed,
-          );
+          <CompletedList exercises={completedExercises} />
 
-          return (
-            <footer className="mt-auto flex items-center gap-3 pt-8">
-              <button
-                type="button"
-                disabled={previousIndex === undefined}
-                className="inline-flex items-center gap-2 rounded-2xl border border-momentum-border px-5 py-3 font-semibold text-white transition-colors hover:bg-momentum-panel disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => setCurrentIndex(previousIndex)}
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                Previous
-              </button>
+          {/* Bottom Controls */}
+          {(() => {
+            const previousIndex = exerciseQueue
+              .slice(0, currentIndex)
+              .map((_, index) => index)
+              .reverse()
+              .find((index) => !exerciseQueue[index].completed);
+            const nextIndex = exerciseQueue.findIndex(
+              (exercise, index) => index > currentIndex && !exercise.completed,
+            );
 
-              <button
-                type="button"
-                disabled={nextIndex === -1}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-momentum-border px-5 py-3 font-semibold text-white transition-colors hover:bg-momentum-panel disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => setCurrentIndex(nextIndex)}
-              >
-                Next
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
+            return (
+              <footer className="mt-auto flex items-center gap-3 pt-8">
+                <button
+                  type="button"
+                  disabled={previousIndex === undefined}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-momentum-border px-5 py-3 font-semibold text-white transition-colors hover:bg-momentum-panel disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => setCurrentIndex(previousIndex)}
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  Previous
+                </button>
 
-              <button
-                type="button"
-                disabled={!allExercisesCompleted}
-                title={
-                  allExercisesCompleted
-                    ? undefined
-                    : "Complete every exercise to finish"
-                }
-                className="inline-flex items-center gap-2 rounded-2xl bg-momentum-lime px-6 py-3 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-momentum-lime"
-                onClick={() => navigate("/dashboard")}
-              >
-                Finish
-                <Check className="h-4 w-4" aria-hidden="true" />
-              </button>
-            </footer>
-          );
-        })()}
+                <button
+                  type="button"
+                  disabled={nextIndex === -1}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-momentum-border px-5 py-3 font-semibold text-white transition-colors hover:bg-momentum-panel disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => setCurrentIndex(nextIndex)}
+                >
+                  Next
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!allExercisesCompleted}
+                  title={
+                    allExercisesCompleted
+                      ? undefined
+                      : "Complete every exercise to finish"
+                  }
+                  className="inline-flex items-center gap-2 rounded-2xl bg-momentum-lime px-6 py-3 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-momentum-lime"
+                  onClick={() => navigate("/dashboard")}
+                >
+                  Finish
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </footer>
+            );
+          })()}
+        </div>
       </div>
     </div>
   );

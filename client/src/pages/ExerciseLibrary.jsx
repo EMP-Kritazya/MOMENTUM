@@ -20,6 +20,7 @@ import {
 import ExerciseFormModal from "../components/admin/ExerciseFormModal.jsx";
 import ActionToast from "../components/ui/ActionToast.jsx";
 import { useAuth } from "../context/authContext.js";
+import { AlternatingExerciseImage } from "../components/utilities/AlternatingExerciseImage.jsx";
 
 function capitalize(value) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
@@ -61,6 +62,7 @@ export default function ExerciseLibrary() {
           muscle: exercise.target_muscle,
           equipment: exercise.equipment_needed,
           difficulty: capitalize(exercise.difficulty),
+          imageUrls: exercise.image_urls ?? [],
           isActive: exercise.is_active !== false,
         })),
       );
@@ -287,20 +289,27 @@ export default function ExerciseLibrary() {
                   : "border-amber-500/30 opacity-70"
               }`}
             >
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-momentum-lime/10">
+              {exercise.imageUrls.length > 0 ? (
+                <AlternatingExerciseImage
+                  imageUrls={exercise.imageUrls}
+                  alt={exercise.name}
+                  className="-mx-4 -mt-4 mb-3 rounded-t-xl"
+                />
+              ) : (
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-momentum-lime/10">
                   <Dumbbell size={18} className="text-momentum-lime" />
                 </div>
-                <div className="flex items-center gap-2">
-                  {!exercise.isActive && (
-                    <span className="rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-300">
-                      Archived
-                    </span>
-                  )}
-                  <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-momentum-muted">
-                    {exercise.difficulty}
+              )}
+
+              <div className="mb-3 flex items-center justify-end gap-2">
+                {!exercise.isActive && (
+                  <span className="rounded-full bg-amber-500/10 px-2 py-1 text-xs text-amber-300">
+                    Archived
                   </span>
-                </div>
+                )}
+                <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-momentum-muted">
+                  {exercise.difficulty}
+                </span>
               </div>
 
               <h2 className="text-sm font-semibold text-white">

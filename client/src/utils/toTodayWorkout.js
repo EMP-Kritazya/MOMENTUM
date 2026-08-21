@@ -50,6 +50,8 @@ export function toTodayWorkout({
       exerciseId: exercise.exercise_id,
       name: exercise.exercise_name,
       target_muscle: exercise.target_muscle,
+      imageUrls: exercise.image_urls ?? [],
+      instructions: exercise.instructions ?? [],
       sets: exercise.sets,
       reps: exercise.reps,
       completed: exercise.completed ?? false,

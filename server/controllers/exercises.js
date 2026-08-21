@@ -85,7 +85,8 @@ export const getAllExercises = async (req, res) => {
   try {
     const results = await pool.query(
       `SELECT exercise_id, exercise_name, target_muscle,
-              equipment_needed, difficulty, is_active
+              equipment_needed, difficulty, is_active,
+              image_urls, instructions
          FROM exercises
         WHERE is_active = TRUE
         ORDER BY exercise_name ASC`,
@@ -104,6 +105,7 @@ export const getAllExercisesAdmin = async (req, res) => {
     const results = await pool.query(
       `SELECT exercise_id, exercise_name, target_muscle,
               equipment_needed, difficulty, is_active,
+              image_urls, instructions,
               created_at, updated_at
          FROM exercises
         WHERE ($1::boolean = TRUE OR is_active = TRUE)
@@ -125,7 +127,8 @@ export const getIndividualExercise = async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT exercise_id, exercise_name, target_muscle,
-              equipment_needed, difficulty, is_active
+              equipment_needed, difficulty, is_active,
+              image_urls, instructions
          FROM exercises
         WHERE exercise_id = $1 AND is_active = TRUE`,
       [id],

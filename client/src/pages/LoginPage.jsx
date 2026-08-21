@@ -90,7 +90,7 @@ function LoginPage() {
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col">
         <OnboardingHeader showProgress={false} />
 
-        <section className="flex flex-1 flex-col px-6 pb-6 pt-20 sm:px-8 sm:pt-28">
+        <section className="flex flex-1 flex-col px-6 pb-6 pt-20 sm:px-8 sm:pt-15">
           <div className="mx-auto w-full max-w-2xl">
             <p className="mb-4 text-xs font-bold tracking-[0.2em] text-momentum-lime">
               WELCOME BACK
@@ -126,7 +126,7 @@ function LoginPage() {
 
             <form
               onSubmit={handleLoginSubmit}
-              className="mt-10 grid grid-cols-1 gap-5"
+              className="mt-5 grid grid-cols-1 gap-5"
             >
               <TextInput
                 id="email"

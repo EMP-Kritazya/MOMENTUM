@@ -83,6 +83,8 @@ const createTables = async () => {
     difficulty VARCHAR(30) NOT NULL
       CHECK (difficulty IN ('beginner', 'intermediate', 'expert')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    image_urls VARCHAR(255)[] NOT NULL DEFAULT '{}',
+    instructions TEXT[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
@@ -217,7 +219,7 @@ const seedExerciseTable = async () => {
   try {
     for (const exercise of exercises) {
       const insertQuery = {
-        text: "INSERT INTO exercises (exercise_name, target_muscle, equipment_needed, difficulty) VALUES ($1, $2, $3, $4)",
+        text: "INSERT INTO exercises (exercise_name, target_muscle, equipment_needed, difficulty, image_urls, instructions) VALUES ($1, $2, $3, $4, $5, $6)",
       };
 
       const values = [
@@ -225,6 +227,8 @@ const seedExerciseTable = async () => {
         exercise.target_muscle,
         exercise.equipment_needed,
         exercise.difficulty,
+        exercise.image_urls ?? [],
+        exercise.instructions ?? [],
       ];
 
       await pool.query(insertQuery, values);
