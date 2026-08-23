@@ -4,7 +4,6 @@ import exercises from "../data/exercise.js";
 import workoutTemplates from "../data/workoutTemplates.js";
 import workoutTemplateExercises from "../data/workoutTemplateExercises.js";
 import bcrypt from "bcryptjs";
-import { seedDemoData } from "./demoSeeder.js";
 
 // Reads the initial administrator details from environment variables.
 const {
@@ -342,10 +341,6 @@ const seedTables = async () => {
   await seedAdmin();
   await seedExerciseTable();
   await seedWorkoutTemplateTable();
-
-  if (process.env.SEED_DEMO_DATA === "true") {
-    await seedDemoData();
-  }
 };
 
 seedTables()

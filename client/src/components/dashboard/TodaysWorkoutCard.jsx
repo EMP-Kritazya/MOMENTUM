@@ -148,7 +148,7 @@ export function TodaysWorkoutCard() {
     <CardShell>
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -left-24 -top-24 h-82 w-92 rounded-full bg-[#273410] blur-3xl"
+        className="pointer-events-none absolute -left-16 -top-16 h-72 w-80 rounded-full bg-[#273410] blur-3xl"
       />
 
       <div className="relative">
