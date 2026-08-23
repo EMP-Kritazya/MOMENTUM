@@ -11,7 +11,7 @@ beginners and casual gym-goers build sustainable workout habits. It combines
 guided onboarding, workout tracking, and small accountability groups so users
 can focus on consistency instead of planning every detail themselves.
 
-**Live app:** https://momentum-z1ob.onrender.com
+**Live app:** https://momentum.kritazya.dev
 
 Idea by **Kritazya Upreti**. Designed and developed by **Kritazya Upreti**,
 **Johan Almanzar**, **Ngoc (Vy) Pham**, and **Joy Tran**.
