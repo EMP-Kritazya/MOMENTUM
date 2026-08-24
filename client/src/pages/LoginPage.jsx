@@ -86,11 +86,11 @@ function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-momentum-bg">
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col">
+    <main className="max-h-screen bg-momentum-bg">
+      <div className="mx-auto flex max-h-screen w-full max-w-5xl flex-col">
         <OnboardingHeader showProgress={false} />
 
-        <section className="flex flex-1 flex-col px-6 pb-6 pt-20 sm:px-8 sm:pt-15">
+        <section className="flex flex-1 flex-col px-6 pb-6 pt-10 sm:px-8 md:pt-15">
           <div className="mx-auto w-full max-w-2xl">
             <p className="mb-4 text-xs font-bold tracking-[0.2em] text-momentum-lime">
               WELCOME BACK

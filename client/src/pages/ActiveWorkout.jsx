@@ -262,7 +262,7 @@ export default function ActiveWorkout() {
           />
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_360px] items-start">
           <CurrentExerciseCard
             key={currExercise.templateExerciseId}
             exerciseName={currExercise.name}

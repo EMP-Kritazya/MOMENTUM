@@ -153,7 +153,7 @@ function AdminLoginPage() {
               to="/"
               className="mt-6 block text-center text-sm font-semibold text-momentum-muted hover:text-momentum-lime"
             >
-              Return to member onboarding
+              Return to regular user Login
             </Link>
           </div>
         </section>

@@ -1,8 +1,10 @@
 import { AlternatingExerciseImage } from "../utilities/AlternatingExerciseImage";
+import { useState } from "react";
 
 // Sits beside the current exercise on large screens (sticky, so it stays in
 // view while the workout list scrolls) and stacks below it on mobile.
 export function ExerciseMediaPanel({ exerciseName, imageUrls, instructions }) {
+  const [showInstruction, setShowInstruction] = useState(false);
   const hasMedia = imageUrls?.length > 0;
   const hasInstructions = instructions?.length > 0;
 
@@ -30,14 +32,19 @@ export function ExerciseMediaPanel({ exerciseName, imageUrls, instructions }) {
 
         {hasInstructions && (
           <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-momentum-lime">
+            <button
+              onClick={() => setShowInstruction((prev) => !prev)}
+              className="m-0 block appearance-none border-0 bg-transparent p-0 font-sans text-xs font-semibold uppercase tracking-[0.15em] text-momentum-lime whitespace-nowrap"
+            >
               How to perform this exercise
-            </p>
-            <ol className="mt-3 space-y-2 text-sm text-momentum-muted list-decimal list-inside">
-              {instructions.map((step, index) => (
-                <li key={index}>{step}</li>
-              ))}
-            </ol>
+            </button>
+            {showInstruction && (
+              <ol className="mt-3 space-y-2 text-sm text-momentum-muted list-decimal list-inside">
+                {instructions.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
+            )}
           </div>
         )}
       </div>

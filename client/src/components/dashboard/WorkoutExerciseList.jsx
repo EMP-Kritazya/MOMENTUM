@@ -32,7 +32,7 @@ function ExerciseRow({ index, name, scheme, completed }) {
 // Generated WorkoutLists Holder
 export default function WorkoutExerciseList({ exercises }) {
   return (
-    <ol className="grid grid-cols-1 gap-3 md:grid-cols-2">
+    <ol className="grid grid-cols-1 gap-3 lg:grid-cols-2">
       {exercises.map((exercise, i) => (
         <ExerciseRow
           key={exercise.templateExerciseId}

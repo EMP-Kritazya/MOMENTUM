@@ -94,8 +94,8 @@ function SignUpPage() {
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col">
         <OnboardingHeader showProgress={false} />
 
-        <section className="flex flex-1 flex-row px-6 pb-6 pt-20 sm:px-8 sm:pt-28 justify-between">
-          <div className="mx-0 max-w-[30%]">
+        <section className="flex flex-1 flex-col md:flex-row px-6 pb-6 pt-10 sm:px-8 md:pt-28 justify-between">
+          <div className="mx-0 md:max-w-[30%]">
             <p className="mb-4 text-xs font-bold tracking-[0.2em] text-momentum-lime">
               Welcome. LET'S GET STARTED
             </p>
@@ -132,7 +132,7 @@ function SignUpPage() {
             </p>
 
             {/* -Or- */}
-            <div className="flex items-center gap-3 my-4 mt-10">
+            <div className="flex items-center gap-3 my-4 mt-5 md:mt-10">
               <div className="h-px flex-1 bg-white" />
 
               <span className="text-sm text-white">or</span>
@@ -141,7 +141,7 @@ function SignUpPage() {
             </div>
             <GithubButton />
           </div>
-          <div className="w-[60%]">
+          <div className="mt-10 md:mt-0 md:w-[60%]">
             <form
               onSubmit={handleSignUpSubmit}
               className="mt-0 grid grid-cols-1 gap-5"

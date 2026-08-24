@@ -494,12 +494,54 @@ export const todaysSession = async (req, res) => {
     );
     const lastSessionId = previous.rows[0]?.session_id ?? -1;
 
-    // if the previous workout isn't completed then we generate a rolled over flag, and
+    // if the previous workout isn't completed then we generate a rolled over flag,
     const rolledOver = previous.rows.length > 0 && !previous.rows[0].completed;
 
     // We don't wanna skip workouts even if not completed
     if (rolledOver) {
-      return res.status(201).json(await loadWorkoutPayload(previous));
+      const client = await pool.connect();
+
+      const templateId = previous.rows[0].template_id;
+
+      try {
+        await client.query("BEGIN");
+
+        const created = await client.query(
+          `INSERT INTO workoutsessions
+         (user_id, template_id, date, duration_minutes, completed, rolled_over)
+       VALUES ($1, $2, $3, $4, FALSE, TRUE)
+       RETURNING *`,
+          [userId, templateId, today, 0],
+        );
+
+        const session = created.rows[0];
+        const sessionId = session.session_id;
+
+        const workoutTemp_created = await client.query(
+          `INSERT INTO workouttemplateexercises
+          (session_id, exercise_id, sets, reps, exercise_order, completed)
+          SELECT
+          $1,
+          exercise_id,
+          sets,
+          reps,
+          exercise_order,
+          FALSE
+          FROM workouttemplateexercises
+          WHERE session_id = $2
+          `,
+          [sessionId, lastSessionId],
+        );
+
+        await client.query("COMMIT");
+
+        return res.status(201).json(await loadWorkoutPayload(created.rows[0]));
+      } catch (error) {
+        await client.query("ROLLBACK").catch(() => {});
+        throw error;
+      } finally {
+        client.release();
+      }
     }
 
     const session = await createTemplateExercises(
@@ -932,15 +974,16 @@ export async function reconcileStreak(userId, timeZone) {
   }
 
   const trackedWeekStart = parseISODateUTC(user.streak_week_start);
-  if (trackedWeekStart.getTime() >= currentWeekStart.getTime()) {
+  if (trackedWeekStart.getTime() === currentWeekStart.getTime()) {
     return; // Still the same week — nothing to reconcile.
   }
 
-  let onboardingWeek;
+  let onboardingWeek = user.onboarding_week;
   if (user.onboarding_week) {
     // Check if user has finished their first week
     if (diffInDays(trackedWeekStart, currentWeekStart) > 6) {
       onboardingWeek = false;
+      currentWeekStart = trackedWeekStart;
     }
   }
 
@@ -1083,8 +1126,8 @@ export const getUserActivitySummary = async (req, res) => {
     }
 
     const bars = [];
-    for (let weeksAgo = 7; weeksAgo >= 0; weeksAgo -= 1) {
-      const weekStart = addDays(currentWeekStart, -7 * weeksAgo);
+    for (let weeksAgo = 0; weeksAgo <= 7; weeksAgo += 1) {
+      const weekStart = addDays(currentWeekStart, 7 * weeksAgo);
       let count = 0;
       for (let i = 0; i < 7; i++) {
         if (minutesByDate.has(toISODate(addDays(weekStart, i)))) count += 1;
