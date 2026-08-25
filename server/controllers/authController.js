@@ -188,6 +188,12 @@ export async function signUpUser(req, res) {
     return res.status(400).json({ message: "ALl fields are required" });
   }
 
+  if (password.length < 8) {
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 8 characters." });
+  }
+
   try {
     // fist see if the email is already registered
     const isUser = await pool.query(`SELECT * FROM users where email = $1`, [

@@ -41,7 +41,7 @@ function SignUpPage() {
   }
 
   function validate(values) {
-    const errors = { username: "", email: "" };
+    const errors = { username: "", email: "", password: "" };
 
     if (!values.username.trim()) {
       errors.username = "Username is required.";
@@ -51,6 +51,10 @@ function SignUpPage() {
       errors.email = "Email is required.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
       errors.email = "Enter a valid email address.";
+    }
+
+    if (values.password.length < 8) {
+      errors.password = "Password must be at least 8 characters.";
     }
 
     return errors;
