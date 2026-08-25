@@ -153,9 +153,9 @@ export function TodaysWorkoutCard() {
 
       <div className="relative">
         {(rolledOver || streakWarning || onboardingInfo) && (
-          <div className="mb-6 flex flex-col gap-2">
+          <div className="mb-4 sm:mb-6 flex flex-col gap-2">
             {!onboardingInfo && rolledOver && (
-              <div className="flex items-center gap-2 rounded-2xl border border-momentum-border/60 bg-white/5 px-4 py-2.5 text-sm text-momentum-muted">
+              <div className="flex items-center gap-2 rounded-2xl border border-momentum-border/60 bg-white/5 px-4 py-2.5 text-[12px] text-momentum-muted sm:text-sm ">
                 <AlertTriangle
                   className="h-4 w-4 shrink-0 text-momentum-muted"
                   aria-hidden="true"
@@ -166,7 +166,7 @@ export function TodaysWorkoutCard() {
             )}
             {!onboardingInfo && streakWarning && (
               <div
-                className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold ${
+                className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-[12px] sm:text-sm font-semibold ${
                   weekly.inGraceWeek
                     ? "border-red-500/40 bg-red-500/10 text-red-400"
                     : "border-amber-500/40 bg-amber-500/10 text-amber-400"
@@ -180,7 +180,7 @@ export function TodaysWorkoutCard() {
               </div>
             )}
             {onboardingInfo && (
-              <div className="flex items-center gap-2 rounded-2xl border border-momentum-border/60 bg-white/5 px-4 py-2.5 text-sm text-blue-200">
+              <div className="flex items-center gap-2 rounded-2xl border border-momentum-border/60 bg-white/5 px-2 py-1.5 sm:px-4 sm:py-2.5 text-[12px] sm:text-sm text-blue-200">
                 <Waves
                   className="h-4 w-4 shrink-0 text-blue-200"
                   aria-hidden="true"
@@ -191,18 +191,18 @@ export function TodaysWorkoutCard() {
           </div>
         )}
 
-        <div className="flex items-start justify-between">
+        <div className="flex items-center justify-between">
           <p className="text-xs font-bold uppercase tracking-[0.15em] text-momentum-lime">
             {label}
           </p>
-          <span className="rounded-full border border-[#3B4627] bg-[#273410] px-4 py-2 text-xs font-bold text-momentum-lime">
+          <span className="rounded-full border border-[#3B4627] bg-[#273410] px-2 py-1 text-[10px] sm:px-4 sm:py-2 sm:text-xs font-bold text-red-300">
             {difficulty}
           </span>
         </div>
 
-        <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mt-6 md:mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="font-display text-4xl text-white sm:text-4xl">
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white sm:text-4xl">
               {title}
             </h2>
 
@@ -224,7 +224,7 @@ export function TodaysWorkoutCard() {
                   ? "Continue your workout"
                   : undefined
             }
-            className="inline-flex shrink-0 self-center items-center gap-2 rounded-2xl bg-momentum-lime px-8 py-2.5 mt-7 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime focus-visible:ring-offset-2 focus-visible:ring-offset-momentum-panel cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-momentum-lime"
+            className={`inline-flex shrink-0 self-center items-center gap-2 rounded-2xl bg-momentum-lime px-5 py-1 sm:px-8 sm:py-2.5 mt-3 sm:mt-7 font-black text-momentum-bg transition-colors hover:bg-[#d2ff52] focus:outline-none focus-visible:ring-2 focus-visible:ring-momentum-lime focus-visible:ring-offset-2 focus-visible:ring-offset-momentum-panel cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-momentum-lime ${!completed && !started ? "animate-[softGlow_2s_ease-in-out_infinite]" : ""}`}
           >
             {completed
               ? "Today's Workout - Completed"
@@ -237,7 +237,7 @@ export function TodaysWorkoutCard() {
           </button>
         </div>
 
-        <div className="mt-8">
+        <div className="mt-6 sm:mt-8">
           <WorkoutExerciseList exercises={exercises} />
         </div>
       </div>

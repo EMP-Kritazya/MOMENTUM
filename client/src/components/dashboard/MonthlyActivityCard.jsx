@@ -57,9 +57,11 @@ export default function MonthlyActivityCard() {
   const { totalWorkouts, weekdayLabels, grid } = monthly;
 
   return (
-    <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
+    <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-4 sm:p-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-white">Monthly Activity</h3>
+        <h3 className="test-md sm:text-lg font-semibold text-white">
+          Monthly Activity
+        </h3>
         <Activity className="h-5 w-5 text-momentum-muted" aria-hidden="true" />
       </div>
 
@@ -75,7 +77,7 @@ export default function MonthlyActivityCard() {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
           {grid.map((week, rowIndex) => (
             <div key={rowIndex} className="grid grid-cols-7 gap-2">
               {week.map((completed, colIndex) => (
@@ -92,7 +94,7 @@ export default function MonthlyActivityCard() {
         </div>
       </div>
 
-      <p className="mt-6 text-sm text-momentum-muted">
+      <p className="mt-4 sm:mt-6 text-sm text-momentum-muted">
         <span className="font-semibold text-white">
           {totalWorkouts} workouts
         </span>{" "}

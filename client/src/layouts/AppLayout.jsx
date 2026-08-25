@@ -1,6 +1,6 @@
 // src/layouts/AppLayout.jsx
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, NavLink } from "react-router-dom";
 import { Menu } from "lucide-react";
 import Sidebar from "../components/sidebar/Sidebar";
 
@@ -23,12 +23,14 @@ export default function AppLayout() {
           >
             <Menu size={20} aria-hidden="true" />
           </button>
-          <span
-            className="text-lg font-bold tracking-tight"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
-            <span className="text-primary">M</span>omentum
-          </span>
+          <NavLink to="/momentum" end>
+            <span
+              className="text-lg font-bold tracking-tight"
+              style={{ fontFamily: "'Fraunces', serif" }}
+            >
+              <span className="text-primary">M</span>omentum
+            </span>
+          </NavLink>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Users, Flame } from "lucide-react";
-import { getPrimaryGroupProgress } from "../../api/groupsApi.js";
+import { Users, Flame, ChevronLeft, ChevronRight } from "lucide-react";
+import { getUserGroups, getGroupMembers } from "../../api/groupsApi.js";
 import { useAuth } from "../../context/authContext.js";
 
 function MemberRow({ member, currentUserId }) {
@@ -24,11 +24,14 @@ function MemberRow({ member, currentUserId }) {
       </span>
 
       <span
-        className={`text-sm ${
+        className={`flex items-center gap-2 text-sm ${
           isCurrentUser ? "font-semibold text-momentum-lime" : "text-white"
         }`}
       >
         {displayName}
+        <p className="text-xs text-momentum-muted">
+          🔥 {member.current_streak}d
+        </p>
       </span>
 
       <span className="ml-auto flex items-center gap-1.5 text-sm text-momentum-muted">
@@ -46,7 +49,8 @@ function MemberRow({ member, currentUserId }) {
 
 export default function GroupProgressCard() {
   const { user, loading: authLoading } = useAuth();
-  const [group, setGroup] = useState(null);
+  const [groups, setGroups] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -62,8 +66,20 @@ export default function GroupProgressCard() {
     setLoading(true);
     setError("");
 
-    getPrimaryGroupProgress(controller.signal)
-      .then(setGroup)
+    getUserGroups(controller.signal)
+      .then(async (groupRows) => {
+        const groupsWithMembers = await Promise.all(
+          groupRows.map(async (groupRow) => ({
+            ...groupRow,
+            members: await getGroupMembers(
+              groupRow.group_id,
+              controller.signal,
+            ),
+          })),
+        );
+        setGroups(groupsWithMembers);
+        setActiveIndex(0);
+      })
       .catch((requestError) => {
         if (requestError.name !== "AbortError") {
           setError(requestError.message);
@@ -77,6 +93,17 @@ export default function GroupProgressCard() {
 
     return () => controller.abort();
   }, [authLoading, user]);
+
+  const groupCount = groups.length;
+  const group = groups[activeIndex] ?? null;
+
+  function showPrevGroup() {
+    setActiveIndex((index) => (index - 1 + groupCount) % groupCount);
+  }
+
+  function showNextGroup() {
+    setActiveIndex((index) => (index + 1) % groupCount);
+  }
 
   if (authLoading || loading) {
     return (
@@ -114,7 +141,7 @@ export default function GroupProgressCard() {
   const totalMembers = members.length;
 
   return (
-    <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
+    <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6 md:items-stretch">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">
@@ -130,6 +157,32 @@ export default function GroupProgressCard() {
         <Users className="h-5 w-5 text-momentum-muted" aria-hidden="true" />
       </div>
 
+      {groupCount > 1 && (
+        <div className="mt-4 flex items-center justify-between rounded-2xl border border-momentum-border/60 bg-white/5 px-2 py-1.5">
+          <button
+            type="button"
+            onClick={showPrevGroup}
+            aria-label="Previous group"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-momentum-muted transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          </button>
+
+          <span className="text-xs font-semibold text-momentum-muted">
+            {activeIndex + 1} of {groupCount} groups
+          </span>
+
+          <button
+            type="button"
+            onClick={showNextGroup}
+            aria-label="Next group"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-momentum-muted transition-colors hover:bg-white/10 hover:text-white cursor-pointer"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       <ul className="mt-4 flex flex-col divide-y divide-momentum-border/40">
         {members.map((member) => (
           <MemberRow
@@ -139,14 +192,6 @@ export default function GroupProgressCard() {
           />
         ))}
       </ul>
-
-      <div className="mt-4 flex items-center justify-between border-t border-momentum-border/60 pt-4">
-        <span className="text-sm text-momentum-muted">Group streak</span>
-        <span className="flex items-center gap-1.5 font-semibold text-momentum-lime">
-          <Flame className="h-4 w-4" aria-hidden="true" />
-          {group.current_streak} days
-        </span>
-      </div>
     </section>
   );
 }

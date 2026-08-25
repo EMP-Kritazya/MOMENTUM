@@ -13,7 +13,6 @@ import { useEffect } from "react";
 import { useAuth } from "../../context/authContext.js";
 
 const navItems = [
-  { to: "/dashboard", label: "Dashboard", icon: Home, end: true },
   { to: "/history", label: "History", icon: Calendar },
   { to: "/groups", label: "Groups", icon: Users },
   { to: "/library", label: "Exercises", icon: BookOpen },
@@ -67,12 +66,14 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         style={{ background: "var(--sidebar)" }}
       >
         <div className="flex items-center justify-between px-6 py-5 border-b border-border">
-          <span
-            className="text-xl font-bold tracking-tight"
-            style={{ fontFamily: "'Fraunces', serif" }}
-          >
-            <span className="text-primary">M</span>omentum
-          </span>
+          <NavLink to="/dashboard" end onClick={onClose}>
+            <span
+              className="text-xl font-bold tracking-tight"
+              style={{ fontFamily: "'Fraunces', serif" }}
+            >
+              <span className="text-primary">M</span>omentum
+            </span>
+          </NavLink>
           <button
             type="button"
             onClick={onClose}

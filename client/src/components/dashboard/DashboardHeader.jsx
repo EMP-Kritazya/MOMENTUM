@@ -5,7 +5,7 @@ export default function DashboardHeader({ streakDays }) {
   const { greeting, currDate } = Clock();
 
   return (
-    <header className="flex flex-col gap-4 sm:flex-row md:items-start sm:justify-between">
+    <header className="flex flex-row gap-0 md:gap-4  md:items-start justify-between">
       <Clock />
 
       <StreakBadge days={streakDays} />

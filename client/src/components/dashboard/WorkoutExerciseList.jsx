@@ -2,14 +2,14 @@
 function ExerciseRow({ index, name, scheme, completed }) {
   return (
     <li
-      className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 transition ${
+      className={`flex items-center gap-2 sm:gap-3 rounded-2xl border px-2 py-1.5 sm:px-4 sm:py-3.5 transition ${
         completed
           ? "border-momentum-border/30 bg-white/2 opacity-50"
           : "border-momentum-border/60 bg-white/2"
       }`}
     >
       <span
-        className={`font-mono text-xs font-bold ${
+        className={`font-mono text-[10px] sm:text-xs font-bold ${
           completed ? "text-momentum-muted" : "text-momentum-lime"
         }`}
       >
@@ -17,7 +17,9 @@ function ExerciseRow({ index, name, scheme, completed }) {
       </span>
       <span
         className={`font-bold ${
-          completed ? "text-momentum-muted line-through" : "text-white"
+          completed
+            ? "text-momentum-muted line-through"
+            : "text-white text-[15px]"
         }`}
       >
         {name}
@@ -32,7 +34,7 @@ function ExerciseRow({ index, name, scheme, completed }) {
 // Generated WorkoutLists Holder
 export default function WorkoutExerciseList({ exercises }) {
   return (
-    <ol className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <ol className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {exercises.map((exercise, i) => (
         <ExerciseRow
           key={exercise.templateExerciseId}

@@ -34,10 +34,10 @@ function Clock() {
 
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-widest text-momentum-muted">
+      <p className="text-[12px] sm:text-xs font-semibold uppercase tracking-widest text-momentum-muted">
         {currDate}
       </p>
-      <h1 className="mt-2 font-display text-4xl text-white sm:text-3xl">
+      <h1 className="mt-2 text-[20px] font-display text-4xl text-white sm:text-3xl">
         {greeting}
         {displayName}
       </h1>

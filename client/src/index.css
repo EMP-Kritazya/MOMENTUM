@@ -50,3 +50,14 @@ button,
 input {
   font: inherit;
 }
+
+@keyframes softGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(210, 255, 82, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 5px rgba(210, 255, 82, 0.8);
+  }
+}
