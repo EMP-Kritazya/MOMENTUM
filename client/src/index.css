@@ -61,3 +61,14 @@ input {
     box-shadow: 0 0 5px rgba(210, 255, 82, 0.8);
   }
 }
+
+@keyframes streakGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(255, 0, 0, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 5px rgba(0, 64, 255, 0.8);
+  }
+}
