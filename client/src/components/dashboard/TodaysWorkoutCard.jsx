@@ -136,7 +136,7 @@ export function TodaysWorkoutCard() {
   const streakWarning =
     weekly?.atRisk && !completed && !weekly?.onboardingWeek
       ? weekly.inGraceWeek
-        ? "This is your grace week — you will lose your streak if you don't fulfill your commitment."
+        ? "This is your grace week, you will lose your streak if you don't fulfill your commitment. Your streak is FROZEN for this week."
         : "Finish today's workout or you'll miss this week's goal and enter a grace week."
       : null;
 

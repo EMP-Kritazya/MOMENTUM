@@ -141,7 +141,7 @@ export default function GroupProgressCard() {
   const totalMembers = members.length;
 
   return (
-    <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6 md:items-stretch">
+    <section className="flex flex-col rounded-3xl border border-momentum-border bg-momentum-panel p-6">
       <div className="flex items-start justify-between">
         <div>
           <h3 className="text-lg font-semibold text-white">

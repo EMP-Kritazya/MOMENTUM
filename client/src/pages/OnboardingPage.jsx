@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { createOnboardingUser } from "../api/usersApi.js";
 import { useAuth } from "../context/authContext.js";
 import OnboardingHeader from "../components/onboarding/OnboardingHeader";
@@ -6,9 +6,7 @@ import OnboardingNavigation from "../components/onboarding/OnboardingNavigation"
 import QuestionStep from "../components/onboarding/QuestionStep";
 import StepIndicators from "../components/onboarding/StepIndicators";
 import { onboardingQuestions } from "../data/onboardingQuestions";
-import { replace, useNavigate } from "react-router-dom";
-import ProfileStep from "../components/onboarding/ProfileStep";
-import Button from "../components/ui/Button";
+import { useNavigate } from "react-router-dom";
 import LoaderScreen from "../components/utilities/LoaderScreen.jsx";
 
 // Stores every profile and fitness answer collected during onboarding.
@@ -24,17 +22,16 @@ const initialAnswers = {
   weeklyCommitment: null,
 };
 
-// Stores field-specific validation messages for the profile form.
-const initialProfileErrors = {
-  firstName: "",
-  lastName: "",
-  username: "",
-  email: "",
-};
-
 function OnboardingPage() {
   const nav = useNavigate();
   const { user, loading, refresh } = useAuth();
+
+  // Controls the active fitness question and all onboarding form data.
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState(initialAnswers);
+  // Tracks the final API request and any server error message.
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
     if (!loading && !user) nav("/", { replace: true });
@@ -45,58 +42,12 @@ function OnboardingPage() {
     return <LoaderScreen />;
   }
 
-  // Controls the active fitness question and all onboarding form data.
-  const [currentStep, setCurrentStep] = useState(0);
-  const [answers, setAnswers] = useState(initialAnswers);
-  const [showProfileStep, setShowProfileStep] = useState(true);
-  const [profileErrors, setProfileErrors] = useState(initialProfileErrors);
-  // Tracks the final API request and any server error message.
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-
   // Gets the active question, its answer, and whether the user may continue.
   const question = onboardingQuestions[currentStep];
   const currentAnswer = answers[question.id];
   const canContinue = Array.isArray(currentAnswer)
     ? currentAnswer.length > 0
     : currentAnswer !== "" && currentAnswer !== null;
-
-  // Validates required profile fields and returns an error object.
-  function validateProfile(values) {
-    const errors = {
-      firstName: "",
-      lastName: "",
-      username: "",
-      email: "",
-    };
-
-    if (!values.firstName.trim()) {
-      errors.firstName = "First name is required.";
-    }
-
-    if (!values.lastName.trim()) {
-      errors.lastName = "Last name is required.";
-    }
-
-    if (!values.username.trim()) {
-      errors.username = "Username is required.";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(values.username.trim())) {
-      errors.username =
-        "Username can only contain letters, numbers, and underscores.";
-    }
-
-    if (!values.email.trim()) {
-      errors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim())) {
-      errors.email = "Enter a valid email address.";
-    }
-    return errors;
-  }
-
-  // Returns true when at least one profile validation message exists.
-  function hasErrors(errors) {
-    return Object.values(errors).some(Boolean);
-  }
 
   // Saves either a single-choice answer or a multi-select equipment answer.
   function handleSelect(value) {
@@ -158,13 +109,9 @@ function OnboardingPage() {
     }
   }
 
-  // Returns to the profile form from step one or to the previous question.
+  // Moves to the previous question; does nothing on the first step.
   function handleBack() {
-    if (currentStep === 0) {
-      setShowProfileStep(true);
-      return;
-    }
-    setCurrentStep((step) => step - 1);
+    setCurrentStep((step) => Math.max(0, step - 1));
   }
 
   // Converts camelCase React state into snake_case database field names.
@@ -189,7 +136,6 @@ function OnboardingPage() {
         <OnboardingHeader
           currentStep={currentStep}
           totalSteps={onboardingQuestions.length}
-          showProgress={!showProfileStep}
         />
 
         <section className="flex flex-1 flex-col px-6 pb-6 pt-20 sm:px-8 sm:pt-28">
@@ -216,15 +162,12 @@ function OnboardingPage() {
             )}
           </div>
 
-          {/* Hides fitness step dots while the profile form is displayed. */}
-          {!showProfileStep && (
-            <div className="mt-auto pt-12">
-              <StepIndicators
-                currentStep={currentStep}
-                totalSteps={onboardingQuestions.length}
-              />
-            </div>
-          )}
+          <div className="mt-auto pt-12">
+            <StepIndicators
+              currentStep={currentStep}
+              totalSteps={onboardingQuestions.length}
+            />
+          </div>
         </section>
       </div>
     </main>
