@@ -216,6 +216,7 @@ async function createTemplateExercises(
     // Load the session's template plus the owner's onboarding preferences.
     const context = await client.query(
       `SELECT
+              u.role,
               u.experience_level,
               u.fitness_goal,
               u.equipment_available
@@ -225,18 +226,24 @@ async function createTemplateExercises(
     if (context.rows.length === 0) {
       throw new Error(`User ${userId} not found`);
     }
-    const { experience_level, fitness_goal, equipment_available } =
+    const { role, experience_level, fitness_goal, equipment_available } =
       context.rows[0];
 
     // Seeded administrators do not complete onboarding, so their fitness
     // preferences may be null. Use the beginner configuration as a safe
     // generator fallback while preserving every supported member selection.
-    const effectiveExperienceLevel = Object.hasOwn(
-      EXPERIENCE_DIFFICULTY,
-      experience_level,
-    )
-      ? experience_level
-      : "beginner";
+    // const effectiveExperienceLevel = Object.hasOwn(
+    //   EXPERIENCE_DIFFICULTY,
+    //   experience_level,
+    // )
+    //   ? experience_level
+    //   : "beginner";
+    let effectiveExperienceLevel;
+    if (role === "member") {
+      effectiveExperienceLevel = experience_level;
+    } else {
+      effectiveExperienceLevel = "beginner";
+    }
 
     difficulties = EXPERIENCE_DIFFICULTY[effectiveExperienceLevel];
     const templateResult = await client.query(
